@@ -2,92 +2,15 @@
   <mat-card-title>Admin Panel</mat-card-title>
   <mat-card-content>
     <mat-tab-group>
-      <!-- Games Tab -->
-      <mat-tab label="Games">
-        <div class="tab-actions">
-          <button mat-raised-button color="primary">
-            <mat-icon>add</mat-icon> Add Game
-          </button>
-        </div>
 
-        <table mat-table [dataSource]="games" class="mat-elevation-z2 full-width-table">
-          <!-- Opponent -->
-          <ng-container matColumnDef="opponent">
-            <th mat-header-cell *matHeaderCellDef> Opponent </th>
-            <td mat-cell *matCellDef="let game"> {{ game.opponent }} </td>
-          </ng-container>
-
-          <!-- Date -->
-          <ng-container matColumnDef="date">
-            <th mat-header-cell *matHeaderCellDef> Date </th>
-            <td mat-cell *matCellDef="let game"> {{ game.gameDateTime | date:'medium' }} </td>
-          </ng-container>
-
-          <!-- Arena -->
-          <ng-container matColumnDef="arena">
-            <th mat-header-cell *matHeaderCellDef> Arena </th>
-            <td mat-cell *matCellDef="let game"> {{ game.arena }} </td>
-          </ng-container>
-
-          <!-- Tickets -->
-          <ng-container matColumnDef="tickets">
-            <th mat-header-cell *matHeaderCellDef> Tickets </th>
-            <td mat-cell *matCellDef="let game"> {{ game.remainingTickets }} </td>
-          </ng-container>
-
-          <!-- Actions -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef> Actions </th>
-            <td mat-cell *matCellDef="let game">
-              <button mat-icon-button color="accent">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button color="warn">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedGameColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedGameColumns"></tr>
-        </table>
-      </mat-tab>
-
-      <!-- Participants Tab -->
-      <mat-tab label="Participants">
-        <table mat-table [dataSource]="participants" class="mat-elevation-z2 full-width-table">
-          <!-- Name -->
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef> Name </th>
-            <td mat-cell *matCellDef="let p"> {{ p.displayName }} </td>
-          </ng-container>
-
-          <!-- Email -->
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef> Email </th>
-            <td mat-cell *matCellDef="let p"> {{ p.email }} </td>
-          </ng-container>
-
-          <!-- Is Admin -->
-          <ng-container matColumnDef="isAdmin">
-            <th mat-header-cell *matHeaderCellDef> Admin </th>
-            <td mat-cell *matCellDef="let p">
-              <mat-slide-toggle [checked]="p.isAdmin"></mat-slide-toggle>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedParticipantColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedParticipantColumns"></tr>
-        </table>
-      </mat-tab>
 
       <!-- Draft Tab -->
       <mat-tab label="Draft">
         <div class="draft-controls">
-          <button mat-raised-button color="primary" (click)="startDraft()">
+          <button mat-raised-button color="primary" (click)="startDraft()" [disabled]="status?.isActive">
             <mat-icon>play_arrow</mat-icon> Start Draft
           </button>
-          <button mat-raised-button color="warn" (click)="resetDraft()">
+          <button mat-raised-button color="warn" (click)="resetDraft()" [disabled]="!status?.isActive">
             <mat-icon>restart_alt</mat-icon> Reset Draft
           </button>
         </div>
@@ -160,6 +83,86 @@
           </mat-card>
         </div>
       </mat-tab>
+            <!-- Games Tab -->
+      <mat-tab label="Games">
+        <div class="tab-actions">
+          <button mat-raised-button color="primary">
+            <mat-icon>add</mat-icon> Add Game
+          </button>
+        </div>
+
+        <table mat-table [dataSource]="games" class="mat-elevation-z2 full-width-table">
+          <!-- Opponent -->
+          <ng-container matColumnDef="opponent">
+            <th mat-header-cell *matHeaderCellDef> Opponent </th>
+            <td mat-cell *matCellDef="let game"> {{ game.opponent }} </td>
+          </ng-container>
+
+          <!-- Date -->
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef> Date </th>
+            <td mat-cell *matCellDef="let game"> {{ game.gameDateTime | date:'medium' }} </td>
+          </ng-container>
+
+          <!-- Arena -->
+          <ng-container matColumnDef="arena">
+            <th mat-header-cell *matHeaderCellDef> Arena </th>
+            <td mat-cell *matCellDef="let game"> {{ game.arena }} </td>
+          </ng-container>
+
+          <!-- Tickets -->
+          <ng-container matColumnDef="tickets">
+            <th mat-header-cell *matHeaderCellDef> Tickets </th>
+            <td mat-cell *matCellDef="let game"> {{ game.remainingTickets }} </td>
+          </ng-container>
+
+          <!-- Actions -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> Actions </th>
+            <td mat-cell *matCellDef="let game">
+              <button mat-icon-button color="accent">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedGameColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedGameColumns"></tr>
+        </table>
+      </mat-tab>
+
+
+      <!-- Participants Tab -->
+      <mat-tab label="Participants">
+        <table mat-table [dataSource]="participants" class="mat-elevation-z2 full-width-table">
+          <!-- Name -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef> Name </th>
+            <td mat-cell *matCellDef="let p"> {{ p.displayName }} </td>
+          </ng-container>
+
+          <!-- Email -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef> Email </th>
+            <td mat-cell *matCellDef="let p"> {{ p.email }} </td>
+          </ng-container>
+
+          <!-- Is Admin -->
+          <ng-container matColumnDef="isAdmin">
+            <th mat-header-cell *matHeaderCellDef> Admin </th>
+            <td mat-cell *matCellDef="let p">
+              <mat-slide-toggle [checked]="p.isAdmin"></mat-slide-toggle>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedParticipantColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedParticipantColumns"></tr>
+        </table>
+      </mat-tab>
+
     </mat-tab-group>
   </mat-card-content>
 </mat-card>

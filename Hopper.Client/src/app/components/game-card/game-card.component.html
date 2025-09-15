@@ -26,32 +26,25 @@
 
         <!-- Only show buttons if tickets remain -->
         <mat-card-actions *ngIf="game.remainingTickets > 0">
-          <button
-            mat-raised-button
-            color="primary"
-            (click)="pick(2)"
-            [disabled]="game.remainingTickets < 2"
-          >
+          <button mat-raised-button color="primary" (click)="pick(2)"
+            [disabled]="game.remainingTickets < 2 || !draftIsActive">
             Pick 2
           </button>
-          <button
-            mat-raised-button
-            color="accent"
-            (click)="pick(4)"
-            [disabled]="game.remainingTickets < 4"
-          >
+          <button mat-raised-button color="accent" (click)="pick(4)"
+            [disabled]="game.remainingTickets < 4 || !draftIsActive">
             Pick 4
           </button>
         </mat-card-actions>
+
+        <div *ngIf="!draftIsActive" class="draft-warning">
+          Draft isn’t active yet. Please wait for the admin to start.
+        </div>
       </div>
     </div>
 
     <!-- Right: Opponent -->
     <div class="team opponent">
-      <img
-        [src]="'assets/' + game.opponent.logoUrl"
-        [alt]="game.opponent.name"
-      />
+      <img [src]="'assets/' + game.opponent.logoUrl" [alt]="game.opponent.name" />
       <span class="team-name">{{ game.opponent.name }}</span>
     </div>
   </div>

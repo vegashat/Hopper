@@ -48,7 +48,7 @@ public class GameRepository : IGameRepository
         INNER JOIN Team t ON g.OpponentTeamId = t.TeamId
         LEFT JOIN Selection s ON g.GameId = s.GameId
         LEFT JOIN Participant u ON s.FirebaseUserId = u.FirebaseUserId
-        WHERE GameId = @gameId
+        WHERE g.GameId = @gameId
         ORDER BY g.GameDateTime";
 
         var result = await MapGames(conn, sql, new {gameId });

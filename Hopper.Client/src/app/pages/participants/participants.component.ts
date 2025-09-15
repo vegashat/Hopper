@@ -18,14 +18,15 @@ export class ParticipantsComponent implements OnInit {
   participants: UserProgress[] = [];
   displayedColumns: string[] = ['displayName', 'picked', 'allotment', 'remaining', 'progress'];
 
-  constructor(private draftService: DraftService) {}
+  constructor(private draftService: DraftService) { }
 
   ngOnInit(): void {
     // You’ll need the current seasonId from somewhere (config, service, etc.)
     const seasonId = 1;
-    this.draftService.getDraftStatus(seasonId).subscribe({
-      next: (status) => (this.participants = status.users ?? []),
-      error: (err) => console.error('Failed to load participants', err),
+    this.draftService.draftStatus$.subscribe(status => {
+      if(status && status.users){
+        this.participants = status.users ?? [];
+      }
     });
   }
 

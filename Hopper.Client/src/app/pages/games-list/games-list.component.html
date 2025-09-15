@@ -1,3 +1,6 @@
 <div class="games-list">
-  <app-game-card *ngFor="let g of games" [game]="g"></app-game-card>
+  <app-game-card
+    *ngFor="let game of games"
+    [game]="game">
+  </app-game-card>
 </div>

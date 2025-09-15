@@ -33,11 +33,12 @@ export class HeaderComponent implements OnInit {
   }
 
   loadStatus(): void {
-    this.draftService.getDraftStatus(this.seasonId).subscribe({
-      next: (status) => (this.status = status),
-      error: (err) => console.error('Failed to load draft status in header', err),
+
+    this.draftService.draftStatus$.subscribe(status => {
+      this.status = status;
     });
   }
+
   get currentPick(): string {
     // The "current" pick should be the first in upcoming
     return this.status?.upcoming?.[0]?.displayName ?? 'N/A';

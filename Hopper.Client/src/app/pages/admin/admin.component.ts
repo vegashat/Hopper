@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { DraftService } from '@services/draft.service';
 import { DraftStatus } from '@models/draft.model';
+import { GamesService } from '@services/games.service';
 
 @Component({
   selector: 'app-admin',
@@ -26,9 +27,11 @@ import { DraftStatus } from '@models/draft.model';
 })
 export class AdminComponent implements OnInit {
   seasonId : number = 1;
-  status?: DraftStatus;
+  status: DraftStatus | undefined;
+  draftService = inject(DraftService)
+  gameService = inject(GamesService)
 
-  constructor(private draftService: DraftService) { }
+  constructor() { }
 
   ngOnInit() : void {
     this.loadStatus();
@@ -48,23 +51,29 @@ export class AdminComponent implements OnInit {
   displayedParticipantColumns = ['name', 'email', 'isAdmin'];
 
   loadStatus(): void {
-    this.draftService.getDraftStatus(this.seasonId).subscribe({
-      next: (s) => (this.status = s),
-      error: (err) => console.error('Failed to load draft status', err),
+    this.draftService.draftStatus$.subscribe(status => {
+      this.status = status ?? undefined;
     });
   }
 
-
   startDraft(): void {
     this.draftService.startDraft(this.seasonId).subscribe({
-      next: (draft) => console.log('Draft started:', draft),
+      next: (draft) => {
+        this.draftService.loadStatus(this.seasonId);
+        this.gameService.loadSeasonGames(this.seasonId);
+        console.log('Draft started:', draft)
+      },
       error: (err) => console.error('Failed to start draft', err),
     });
   }
 
   resetDraft(): void {
     this.draftService.resetDraft(this.seasonId).subscribe({
-      next: () => console.log('Draft reset'),
+      next: () => { 
+        this.draftService.loadStatus(this.seasonId);
+        this.gameService.loadSeasonGames(this.seasonId);
+        console.log('Draft reset')
+      },
       error: (err) => console.error('Failed to reset draft', err),
     });
   }

@@ -9,6 +9,10 @@ export const routes: Routes = [
     children: [
       { path: 'games', component: GamesListComponent },
       {
+        path: 'calendar',
+        loadComponent: () => import('./pages/calendar/calendar.component').then(m => m.CalendarComponent),
+      },
+      {
         path: 'history',
         loadComponent: () =>
           import('./pages/history/history.component').then(m => m.HistoryComponent),

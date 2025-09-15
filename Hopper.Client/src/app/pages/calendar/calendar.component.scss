@@ -1,0 +1,178 @@
+/* Calendar background cleanup */
+.fc {
+    background: white;
+    /* cells on white instead of orange */
+    border-radius: 8px;
+    padding: 8px;
+}
+
+/* Remove default event blue background */
+/* Remove all default event box styles */
+.fc-event,
+.fc-event .fc-event-main {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+.fc .opponent-logo {
+  width: 28px;   /* shrink size */
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto; /* center in the day cell */
+}
+
+/* Cell layout for logos */
+.fc .logo-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+/* Logo size + remove weird spacing */
+.fc .opponent-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+.legend {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+
+    .legend-logo {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+    }
+}
+
+.calendar-wrap {
+    padding: 8px;
+}
+
+.fc-h-event {
+    background-color: transparent;
+    border: transparent;
+}
+::ng-deep .fc-daygrid-event {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+::ng-deep .fc-daygrid-event img {
+    width: 4em;
+    height: auto;
+    display: block;
+    // margin-left: 3em;
+}
+
+::ng-deep .fc-daygrid-event {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+/* Make sure our event can stack items */
+::ng-deep .fc-daygrid-event {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important; /* important: allows text to show */
+}
+
+/* Center logo and time vertically */
+.logo-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Smaller, centered logo */
+.opponent-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  margin-bottom: 2px;
+}
+
+/* Game time styling */
+.game-time {
+  font-size: 0.75rem;
+  color: #333;
+  text-align: center;
+  line-height: 1;
+}
+.calendar-event {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.calendar-event .details {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.calendar-event .time {
+  font-weight: 500;
+}
+
+.calendar-event .remaining {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+.calendar-event .attendees {
+  font-size: 0.65rem;
+  color: #333;
+}
+
+/* Center everything inside the cell */
+/* Base logo styling */
+.fc .opponent-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Cell container */
+.fc .logo-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Disabled state */
+.disabled {
+  opacity: 0.5 !important;
+  filter: grayscale(100%) brightness(0.7) !important;
+  pointer-events: none;
+}
+
+.disabled .opponent-logo {
+  opacity: 0.5 !important;
+  filter: grayscale(100%) brightness(0.6) !important;
+}

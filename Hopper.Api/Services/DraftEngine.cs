@@ -2,6 +2,7 @@ using Hopper.Api.Models;
 using Hopper.Api.Repositories;
 using Hopper.Api.RealTime;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace Hopper.Api.Services;
 
@@ -64,12 +65,12 @@ public class DraftEngine
         return await _drafts.GetDraftPicksAsync(draft.DraftId);
     }
 
-    public async Task<bool> AdvanceQueueAfterSelectionAsync(int seasonId, string firebaseUserId)
+    public async Task<bool> AdvanceQueueAfterSelectionAsync(int seasonId, string firebaseUserId, int gameId )
     {
         var draft = await _drafts.GetActiveDraftAsync(seasonId);
         if (draft is null) return false;
 
-        var claimed = await _drafts.ClaimNextPickAsync(draft.DraftId, expectedFirebaseUserId: firebaseUserId);
+        var claimed = await _drafts.ClaimNextPickAsync(draft.DraftId, expectedFirebaseUserId: firebaseUserId, gameId);
         if (!claimed) return false;
 
         var upcoming = (await _drafts.GetUpcomingPicksAsync(draft.DraftId, 3)).ToList();

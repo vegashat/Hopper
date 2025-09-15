@@ -1,26 +1,31 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GamesService } from '../../services/games.service';
-import { GameCardComponent } from '../../components/game-card/game-card.component';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
 import { Game } from '@models/game.model';
+import { GamesService } from '@services/games.service';
+import { GameCardComponent } from '@components/game-card/game-card.component';
 
 @Component({
   selector: 'app-games-list',
   standalone: true,
-  imports: [CommonModule, GameCardComponent],
+  imports: [CommonModule, MatCardModule, MatButtonModule, GameCardComponent],
   templateUrl: './games-list.component.html',
-  styleUrls: ['./games-list.component.scss']
+  styleUrls: ['./games-list.component.scss'],
 })
 export class GamesListComponent implements OnInit {
+  private gamesSvc = inject(GamesService);
+  private snackBar = inject(MatSnackBar);
+
   games: Game[] = [];
-  season: number = 1;
+  seasonId = 1;
 
-  constructor(private gamesService: GamesService) { }
-
-  ngOnInit() {
-    // TODO: seasonId dynamic later
-    this.gamesService.getSeasonGames(this.season).subscribe(g => {
-      this.games = g
+  ngOnInit(): void {
+    // Subscribe to shared state
+    this.gamesSvc.games$.subscribe(games => {
+      this.games = games;
     });
   }
 }

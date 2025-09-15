@@ -17,7 +17,7 @@ public interface IDraftRepository
     Task AddDraftPickAsync(DraftPick pick);
 
     /// Marks the *earliest* unclaimed pick as claimed. Optionally enforce whose turn it is.
-    Task<bool> ClaimNextPickAsync(int draftId, string? expectedFirebaseUserId = null);
+    Task<bool> ClaimNextPickAsync(int draftId, string? expectedFirebaseUserId = null, int? gameId = null);
 }
 
 public class DraftRepository : IDraftRepository
@@ -51,7 +51,10 @@ public class DraftRepository : IDraftRepository
         using var conn = _db.Open();
         await conn.ExecuteAsync(@"
             DELETE FROM DraftPick WHERE DraftId IN (SELECT DraftId FROM Draft WHERE SeasonId=@seasonId);
-            DELETE FROM Draft WHERE SeasonId=@seasonId;",
+            DELETE FROM Draft WHERE SeasonId=@seasonId;
+            UPDATE GAME set RemainingTickets = 4 where SeasonId = @seasonId;
+            DELETE FROM Selection WHERE GameId in (Select GameId from Game Where SeasonId = @seasonId);",
+
             new { seasonId });
     }
 
@@ -66,11 +69,31 @@ public class DraftRepository : IDraftRepository
     public async Task<IEnumerable<DraftPick>> GetDraftPicksAsync(int draftId)
     {
         using var conn = _db.Open();
-        return await conn.QueryAsync<DraftPick>(
-            "SELECT * FROM DraftPick WHERE DraftId=@draftId ORDER BY PickOrder",
-            new { draftId });
-    }
 
+        var sql = @"
+        SELECT dp.DraftPickId, dp.DraftId, dp.FirebaseUserId, dp.PickOrder, dp.ClaimedUtc,
+               ISNULL(s.Quantity, 0) AS Quantity,
+               t.TeamId, t.Name, t.City, t.LogoUrl
+        FROM DraftPick dp
+        LEFT JOIN Selection s ON dp.FirebaseUserId = s.FirebaseUserId and dp.GameId = s.GameId
+        LEFT JOIN Game g ON s.GameId = g.GameId
+        LEFT JOIN Team t ON g.OpponentTeamId = t.TeamId
+        WHERE dp.DraftId = @draftId
+        ORDER BY dp.PickOrder;";
+
+        var picks = await conn.QueryAsync<DraftPick, Team, DraftPick>(
+            sql,
+            (pick, team) =>
+            {
+                pick.Team = team;
+                return pick;
+            },
+            new { draftId },
+            splitOn: "TeamId"
+        );
+
+        return picks;
+    }
     public async Task<IEnumerable<DraftPick>> GetUpcomingPicksAsync(int draftId, int take = 3)
     {
         using var conn = _db.Open();
@@ -109,7 +132,7 @@ public class DraftRepository : IDraftRepository
             pick);
     }
 
-    public async Task<bool> ClaimNextPickAsync(int draftId, string? expectedFirebaseUserId = null)
+    public async Task<bool> ClaimNextPickAsync(int draftId, string? expectedFirebaseUserId = null, int? gameId = null)
     {
         using var conn = _db.Open();
         using var tx = conn.BeginTransaction();
@@ -136,9 +159,9 @@ public class DraftRepository : IDraftRepository
 
         var rows = await conn.ExecuteAsync(@"
             UPDATE DraftPick
-            SET ClaimedUtc = SYSUTCDATETIME()
+            SET ClaimedUtc = SYSUTCDATETIME(), GameId = @gameId
             WHERE DraftPickId=@id AND ClaimedUtc IS NULL",
-            new { id = next.DraftPickId }, tx);
+            new { id = next.DraftPickId, gameId = gameId }, tx);
 
         if (rows == 0)
         {

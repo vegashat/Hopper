@@ -24,9 +24,8 @@ export class ProgressComponent implements OnInit {
   }
 
   load(): void {
-    this.draftService.getDraftStatus(this.seasonId).subscribe({
-      next: res => (this.status = res),
-      error: err => console.error('Failed to load draft status', err),
+    this.draftService.draftStatus$.subscribe(status => {
+      this.status  = status ?? undefined;
     });
   }
 }

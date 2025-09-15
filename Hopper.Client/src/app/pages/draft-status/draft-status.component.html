@@ -12,7 +12,7 @@
     <mat-card-title>Pick History</mat-card-title>
     <mat-list>
       <mat-list-item *ngFor="let pick of history">
-        <strong>#{{ pick.pickOrder }}</strong> - {{ pick.displayName || pick.firebaseUserId }}
+        <strong>#{{ pick.pickOrder }}</strong> - {{ pick.firebaseUserId || pick.firebaseUserId }}
         <span class="time">({{ pick.claimedUtc | date: 'short' }})</span>
       </mat-list-item>
     </mat-list>

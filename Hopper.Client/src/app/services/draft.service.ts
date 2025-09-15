@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Draft, DraftStatus } from '@models/draft.model';
 
@@ -8,19 +8,28 @@ import { Draft, DraftStatus } from '@models/draft.model';
   providedIn: 'root',
 })
 export class DraftService {
-  private baseUrl = `${environment.apiUrl}/Draft`;
+  private apiUrl = `${environment.apiUrl}/Draft`;
+  private draftStatusSubject = new BehaviorSubject<DraftStatus | null>(null);
+  private season: number = 1;
+  draftStatus$ = this.draftStatusSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.loadStatus(this.season);
+  }
 
-  getDraftStatus(seasonId: number): Observable<DraftStatus> {
-    return this.http.get<DraftStatus>(`${this.baseUrl}/${seasonId}/status`);
+  loadStatus(seasonId: number) {
+    return this.http.get<DraftStatus>(`${this.apiUrl}/${seasonId}/status`).pipe(
+      tap(status => this.draftStatusSubject.next(status))
+    ).subscribe(() => {
+      console.log('draft status loaded');
+    });
   }
 
   startDraft(seasonId: number): Observable<Draft> {
-    return this.http.post<Draft>(`${this.baseUrl}/start/${seasonId}`, {});
+    return this.http.post<Draft>(`${this.apiUrl}/start/${seasonId}`, {});
   }
 
   resetDraft(seasonId: number): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/reset/${seasonId}`, {});
+    return this.http.post<void>(`${this.apiUrl}/reset/${seasonId}`, {});
   }
 }

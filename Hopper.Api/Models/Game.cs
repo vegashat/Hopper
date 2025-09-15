@@ -4,12 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Hopper.Api.Models;
 
-public class Team {
-    public int TeamId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? City { get; set; }
-    public string? LogoUrl { get; set; }
-}
+
 
 public class Game {
     public int GameId { get; set; }

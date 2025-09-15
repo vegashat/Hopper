@@ -10,6 +10,12 @@ export interface DraftPick {
   draftId: number;
   firebaseUserId: string;
   pickOrder: number;
+  team: {
+    teamId: number;
+    name: string;
+    logoUrl?: string;
+  };
+  quantity: number;
   createdUtc: string;
   claimedUtc: string;
 }
@@ -18,7 +24,7 @@ export interface DraftStatus {
   seasonId: number;
   isActive: boolean;
   upcoming: UpcomingPick[];
-  history: HistoryPick[];
+  history: DraftPick[];
   users: UserProgress[];
   totalTicketsRemaining: number;
 }
@@ -27,13 +33,6 @@ export interface UpcomingPick {
   pickOrder: number;
   firebaseUserId: string;
   displayName: string;
-}
-
-export interface HistoryPick {
-  pickOrder: number;
-  firebaseUserId: string;
-  displayName: string;
-  claimedUtc: string;
 }
 
 export interface UserProgress {

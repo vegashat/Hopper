@@ -23,7 +23,7 @@
     <mat-card-title>History</mat-card-title>
     <mat-list>
       <mat-list-item *ngFor="let h of status.history">
-        {{ h.pickOrder }} - {{ h.displayName }} ({{ h.claimedUtc | date:'short' }})
+        {{ h.pickOrder }} - {{ h.firebaseUserId }} ({{ h.claimedUtc | date:'short' }})
       </mat-list-item>
     </mat-list>
   </mat-card>

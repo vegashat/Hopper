@@ -29,7 +29,7 @@ public class SelectionsController : ControllerBase
             var created = await _repo.CreateAsync(request);
 
             // Advance draft queue
-            await _draftEngine.AdvanceQueueAfterSelectionAsync(seasonId, request.FirebaseUserId);
+            await _draftEngine.AdvanceQueueAfterSelectionAsync(seasonId, request.FirebaseUserId, request.GameId);
 
             // Broadcast updates
             await _hub.Clients.Group(DraftHub.SeasonGroup(seasonId.ToString()))

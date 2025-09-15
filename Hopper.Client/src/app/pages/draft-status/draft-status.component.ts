@@ -6,7 +6,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 
 import { DraftService } from '@services/draft.service';
-import { DraftStatus, HistoryPick, UpcomingPick, UserProgress } from '@models/draft.model';
+import { DraftPick, DraftStatus, UpcomingPick, UserProgress } from '@models/draft.model';
 
 @Component({
   selector: 'app-draft-status',
@@ -28,9 +28,8 @@ export class DraftStatusComponent implements OnInit {
   }
 
   loadStatus(): void {
-    this.draftService.getDraftStatus(this.seasonId).subscribe({
-      next: (status) => this.status = status,
-      error: (err) => console.error('Failed to load draft status', err)
+    this.draftService.draftStatus$.subscribe(status => {
+      this.status = status;
     });
   }
 
@@ -38,7 +37,7 @@ export class DraftStatusComponent implements OnInit {
     return this.status?.upcoming ?? [];
   }
 
-  get history(): HistoryPick[] {
+  get history(): DraftPick[] {
     return this.status?.history ?? [];
   }
 

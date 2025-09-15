@@ -1,4 +1,3 @@
-<!-- src/app/pages/history.component.html -->
 <div *ngIf="loading" class="loading">
   <mat-spinner></mat-spinner>
 </div>
@@ -6,7 +5,7 @@
 <div *ngIf="!loading">
   <table mat-table [dataSource]="picks" class="mat-elevation-z1 full-width">
 
-    <!-- Order -->
+    <!-- Pick Order -->
     <ng-container matColumnDef="order">
       <th mat-header-cell *matHeaderCellDef> Pick # </th>
       <td mat-cell *matCellDef="let pick"> {{ pick.pickOrder }} </td>
@@ -18,12 +17,24 @@
       <td mat-cell *matCellDef="let pick"> {{ pick.displayName || pick.firebaseUserId }} </td>
     </ng-container>
 
-    <!-- Claimed -->
-    <ng-container matColumnDef="claimedUtc">
-      <th mat-header-cell *matHeaderCellDef> Claimed </th>
-      <td mat-cell *matCellDef="let pick"> {{ pick.claimedUtc | date:'short' }} </td>
+    <!-- Team -->
+    <ng-container matColumnDef="team">
+      <th mat-header-cell *matHeaderCellDef> Team </th>
+      <td mat-cell *matCellDef="let pick">
+        <div class="team-cell">
+          <img *ngIf="pick.team?.logoUrl" [src]="'assets/' + pick.team.logoUrl" [alt]="pick.team.name" class="team-logo" />
+          <span>{{ pick.team?.name }}</span>
+        </div>
+      </td>
     </ng-container>
 
+    <!-- Quantity -->
+    <ng-container matColumnDef="quantity">
+      <th mat-header-cell *matHeaderCellDef> Tickets </th>
+      <td mat-cell *matCellDef="let pick"> {{ pick.quantity }} </td>
+    </ng-container>
+
+    <!-- Table rows -->
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
   </table>

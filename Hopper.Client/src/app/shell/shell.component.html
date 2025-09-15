@@ -6,6 +6,10 @@
         <mat-icon>sports_basketball</mat-icon>
         <span class="link-label">Games</span>
       </a>
+      <a mat-list-item routerLink="/calendar" routerLinkActive="active-link" (click)="sidenav.close()">
+        <mat-icon>calendar_month</mat-icon>
+        <span class="link-label">Calendar</span>
+      </a>
       <a mat-list-item routerLink="/history" routerLinkActive="active-link" (click)="sidenav.close()">
         <mat-icon>history</mat-icon>
         <span class="link-label">History</span>
