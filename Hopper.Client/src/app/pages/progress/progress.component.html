@@ -1,0 +1,39 @@
+<!-- src/app/pages/progress.component.html -->
+<div *ngIf="status">
+  <mat-card>
+    <mat-card-title>Draft Status</mat-card-title>
+    <mat-card-content>
+      <p>Season ID: {{ status.seasonId }}</p>
+      <p *ngIf="status.isActive; else inactive">Draft is ACTIVE</p>
+      <ng-template #inactive><p>Draft is not active.</p></ng-template>
+      <p>Total Tickets Remaining: {{ status.totalTicketsRemaining }}</p>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="section">
+    <mat-card-title>Upcoming Picks</mat-card-title>
+    <mat-list>
+      <mat-list-item *ngFor="let up of status.upcoming">
+        {{ up.pickOrder }} - {{ up.displayName }}
+      </mat-list-item>
+    </mat-list>
+  </mat-card>
+
+  <mat-card class="section">
+    <mat-card-title>History</mat-card-title>
+    <mat-list>
+      <mat-list-item *ngFor="let h of status.history">
+        {{ h.pickOrder }} - {{ h.displayName }} ({{ h.claimedUtc | date:'short' }})
+      </mat-list-item>
+    </mat-list>
+  </mat-card>
+
+  <mat-card class="section">
+    <mat-card-title>User Progress</mat-card-title>
+    <mat-list>
+      <mat-list-item *ngFor="let u of status.users">
+        {{ u.displayName }} – Picked: {{ u.picked }} / Allotment: {{ u.allotment }} (Remaining: {{ u.remaining }})
+      </mat-list-item>
+    </mat-list>
+  </mat-card>
+</div>

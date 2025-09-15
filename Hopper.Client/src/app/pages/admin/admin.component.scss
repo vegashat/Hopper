@@ -1,0 +1,26 @@
+.full-width-table {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.tab-actions {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.draft-controls {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+mat-card {
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+table {
+  width: 100%;
+  margin-top: 0.5rem;
+}

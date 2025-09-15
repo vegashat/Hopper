@@ -1,0 +1,49 @@
+<mat-card class="ticket-card">
+  <div class="ticket-content">
+    <!-- Left: Thunder -->
+    <div class="team thunder">
+      <img src="assets/thunder.png" alt="Thunder Logo" />
+      <span class="team-name">Thunder</span>
+    </div>
+
+    <!-- Middle: VS + details -->
+    <div class="game-center">
+      <div class="vs-badge">VS</div>
+      <div class="game-details">
+        <mat-card-title>{{ game.opponent.name }}</mat-card-title>
+        <mat-card-subtitle>
+          {{ game.gameDateTime | date:'short':'America/Chicago' }} - {{ game.arena }}
+        </mat-card-subtitle>
+        <p>Remaining tickets: {{ game.remainingTickets }}</p>
+
+        <mat-card-actions>
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="pick(2)"
+            [disabled]="game.remainingTickets < 2"
+          >
+            Pick 2
+          </button>
+          <button
+            mat-raised-button
+            color="accent"
+            (click)="pick(4)"
+            [disabled]="game.remainingTickets < 4"
+          >
+            Pick 4
+          </button>
+        </mat-card-actions>
+      </div>
+    </div>
+
+    <!-- Right: Opponent -->
+    <div class="team opponent">
+      <img
+        [src]="'assets/' + game.opponent.logoUrl"
+        [alt]="game.opponent.name"
+      />
+      <span class="team-name">{{ game.opponent.name }}</span>
+    </div>
+  </div>
+</mat-card>

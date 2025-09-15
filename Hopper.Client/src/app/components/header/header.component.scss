@@ -1,0 +1,48 @@
+.title {
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.draft-status-mini {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  .current {
+    color: #4caf50;
+  }
+
+  .next {
+    color: #2196f3;
+  }
+}
+.draft-status {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    mat-icon {
+      font-size: 20px;
+      vertical-align: middle;
+    }
+  }
+}
+mat-toolbar {
+  background-color: #1976d2; // your Thunder blue
+  color: white; // make all text/icons white
+}
+
+mat-toolbar .mat-icon {
+  color: white;
+}

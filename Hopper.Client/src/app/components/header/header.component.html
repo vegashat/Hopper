@@ -1,0 +1,16 @@
+<mat-toolbar color="primary" class="header-toolbar">
+  <button mat-icon-button (click)="menuToggle.emit()">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="title">Hopper Draft</span>
+
+  <div class="draft-status">
+    <span *ngIf="currentPick" class="status-item">
+      <mat-icon>person</mat-icon> Now: {{ currentPick }}
+    </span>
+    <span *ngIf="nextPick" class="status-item">
+      <mat-icon>schedule</mat-icon> Next: {{ nextPick }}
+    </span>
+  </div>
+</mat-toolbar>

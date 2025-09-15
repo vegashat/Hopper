@@ -1,0 +1,52 @@
+@use '@angular/material' as mat;
+
+// 1. Define your Thunder blue palette
+$thunder-blue: (
+  50: #e3f2fd,
+  100: #bbdefb,
+  200: #90caf9,
+  300: #64b5f6,
+  400: #42a5f5,
+  500: #2196f3,  // Main Thunder Blue
+  600: #1e88e5,
+  700: #1976d2,  // Darker variant (toolbar)
+  800: #1565c0,
+  900: #0d47a1,
+  A100: #82b1ff,
+  A200: #448aff,
+  A400: #2979ff,
+  A700: #2962ff,
+  contrast: (
+    50: #000,
+    100: #000,
+    200: #000,
+    300: #000,
+    400: #000,
+    500: #fff,
+    600: #fff,
+    700: #fff,
+    800: #fff,
+    900: #fff,
+    A100: #000,
+    A200: #fff,
+    A400: #fff,
+    A700: #fff,
+  )
+);
+
+// 2. Define the theme palettes
+$hopper-primary: mat.define-palette($thunder-blue, 700, 500, 900);
+$hopper-accent: mat.define-palette(mat.$orange-palette, A200, A100, A400);
+$hopper-warn: mat.define-palette(mat.$red-palette);
+
+// 3. Create the theme object
+$hopper-theme: mat.define-light-theme((
+  color: (
+    primary: $hopper-primary,
+    accent: $hopper-accent,
+    warn: $hopper-warn,
+  )
+));
+
+// 4. Apply the theme
+@include mat.all-component-themes($hopper-theme);

@@ -1,0 +1,45 @@
+.shell-container {
+  height: 100vh;
+}
+
+.shell-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.shell-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.shell-footer {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+.shell-container {
+  height: 100vh;
+}
+
+.shell-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.shell-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+
+  background: linear-gradient(
+    180deg,
+    #f77a52 0%,   // softened Thunder orange
+    #ffb74d 50%,  // mid orange
+    #ffe0b2 100%  // pale toward bottom
+  );
+}

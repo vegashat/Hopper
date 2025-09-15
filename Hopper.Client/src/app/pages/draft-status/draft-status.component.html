@@ -1,0 +1,48 @@
+<div class="draft-status">
+  <mat-card>
+    <mat-card-title>Upcoming Picks</mat-card-title>
+    <mat-list>
+      <mat-list-item *ngFor="let pick of upcoming">
+        <strong>#{{ pick.pickOrder }}</strong> - {{ pick.displayName || pick.firebaseUserId }}
+      </mat-list-item>
+    </mat-list>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-title>Pick History</mat-card-title>
+    <mat-list>
+      <mat-list-item *ngFor="let pick of history">
+        <strong>#{{ pick.pickOrder }}</strong> - {{ pick.displayName || pick.firebaseUserId }}
+        <span class="time">({{ pick.claimedUtc | date: 'short' }})</span>
+      </mat-list-item>
+    </mat-list>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-title>Participants Progress</mat-card-title>
+    <table mat-table [dataSource]="users" class="mat-elevation-z1">
+      <ng-container matColumnDef="displayName">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let u">{{ u.displayName }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="allotment">
+        <th mat-header-cell *matHeaderCellDef>Allotment</th>
+        <td mat-cell *matCellDef="let u">{{ u.allotment }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="picked">
+        <th mat-header-cell *matHeaderCellDef>Picked</th>
+        <td mat-cell *matCellDef="let u">{{ u.picked }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="remaining">
+        <th mat-header-cell *matHeaderCellDef>Remaining</th>
+        <td mat-cell *matCellDef="let u">{{ u.remaining }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </mat-card>
+</div>

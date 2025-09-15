@@ -1,0 +1,44 @@
+<mat-sidenav-container class="shell-container">
+  <mat-sidenav #sidenav mode="over" class="sidenav">
+    <mat-toolbar>Hopper Draft</mat-toolbar>
+    <mat-nav-list>
+      <a mat-list-item routerLink="/games" routerLinkActive="active-link" (click)="sidenav.close()">
+        <mat-icon>sports_basketball</mat-icon>
+        <span class="link-label">Games</span>
+      </a>
+      <a mat-list-item routerLink="/history" routerLinkActive="active-link" (click)="sidenav.close()">
+        <mat-icon>history</mat-icon>
+        <span class="link-label">History</span>
+      </a>
+      <a mat-list-item routerLink="/participants" routerLinkActive="active-link" (click)="sidenav.close()">
+        <mat-icon>groups</mat-icon>
+        <span class="link-label">Participants</span>
+      </a>
+      <a mat-list-item routerLink="/admin" routerLinkActive="active-link" (click)="sidenav.close()">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span class="link-label">Admin</span>
+      </a>
+      <a mat-list-item routerLink="/draft-status" routerLinkActive="active-link" (click)="sidenav.close()">
+        <mat-icon>assignment</mat-icon>
+        <span class="link-label">Draft Status</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <div class="shell-layout">
+      <!-- Header sticks at top -->
+      <app-header (menuToggle)="sidenav.toggle()"></app-header>
+
+      <!-- Scrollable content -->
+      <div class="shell-content">
+        <router-outlet></router-outlet>
+      </div>
+
+      <!-- Footer sticks at bottom -->
+      <mat-toolbar color="accent" class="shell-footer">
+        <span>© 2025 Hopper Draft</span>
+      </mat-toolbar>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
