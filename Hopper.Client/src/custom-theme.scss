@@ -1,46 +1,60 @@
 @use '@angular/material' as mat;
 
-// 1. Define your Thunder blue palette
+// Thunder brand colors
 $thunder-blue: (
-  50: #e3f2fd,
-  100: #bbdefb,
-  200: #90caf9,
-  300: #64b5f6,
-  400: #42a5f5,
-  500: #2196f3,  // Main Thunder Blue
-  600: #1e88e5,
-  700: #1976d2,  // Darker variant (toolbar)
-  800: #1565c0,
-  900: #0d47a1,
-  A100: #82b1ff,
-  A200: #448aff,
-  A400: #2979ff,
-  A700: #2962ff,
+  50: #e1f2fa,
+  100: #b3e0f4,
+  200: #80ccef,
+  300: #4db7e9,
+  400: #26a7e4,
+  500: #007AC1, // base Thunder blue
+  600: #006eae,
+  700: #006299,
+  800: #005684,
+  900: #00406b,
   contrast: (
-    50: #000,
-    100: #000,
-    200: #000,
-    300: #000,
-    400: #000,
-    500: #fff,
-    600: #fff,
-    700: #fff,
-    800: #fff,
-    900: #fff,
-    A100: #000,
-    A200: #fff,
-    A400: #fff,
-    A700: #fff,
-  )
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: rgba(0, 0, 0, 0.87),
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+  ),
 );
 
-// 2. Define the theme palettes
-$hopper-primary: mat.define-palette($thunder-blue, 700, 500, 900);
-$hopper-accent: mat.define-palette(mat.$orange-palette, A200, A100, A400);
-$hopper-warn: mat.define-palette(mat.$red-palette);
+$thunder-orange: (
+  500: #F05133,
+  600: #d6482e,
+  700: #bb3d27,
+  contrast: (
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+  ),
+);
 
-// 3. Create the theme object
-$hopper-theme: mat.define-light-theme((
+$thunder-yellow: (
+  500: #FDBB30,
+  600: #f5ac0c,
+  700: #e59c00,
+  contrast: (
+    500: rgba(0, 0, 0, 0.87),
+    600: rgba(0, 0, 0, 0.87),
+    700: rgba(0, 0, 0, 0.87),
+  ),
+);
+
+// Define Material palettes using M2 APIs
+$hopper-primary: mat.m2-define-palette($thunder-blue, 500, 100, 700);
+$hopper-accent: mat.m2-define-palette($thunder-orange, 500, 600, 700);
+$hopper-warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+// Build the theme
+$hopper-theme: mat.m2-define-light-theme((
   color: (
     primary: $hopper-primary,
     accent: $hopper-accent,
@@ -48,5 +62,5 @@ $hopper-theme: mat.define-light-theme((
   )
 ));
 
-// 4. Apply the theme
+// Apply theme to all components
 @include mat.all-component-themes($hopper-theme);

@@ -31,6 +31,7 @@ export class GameCardComponent {
     const selection = {
       firebaseUserId: randomUser,
       gameId: this.game.gameId,
+      displayName: randomUser,
       quantity,
     };
 

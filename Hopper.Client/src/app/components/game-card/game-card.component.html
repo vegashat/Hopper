@@ -14,9 +14,18 @@
         <mat-card-subtitle>
           {{ game.gameDateTime | date:'short':'America/Chicago' }} - {{ game.arena }}
         </mat-card-subtitle>
+
+        <!-- Who picked -->
+        <div *ngIf="game.selections.length > 0" class="picks">
+          <div *ngFor="let sel of game.selections">
+            🎟️ {{ sel.displayName || sel.firebaseUserId }} picked {{ sel.quantity }}
+          </div>
+        </div>
+
         <p>Remaining tickets: {{ game.remainingTickets }}</p>
 
-        <mat-card-actions>
+        <!-- Only show buttons if tickets remain -->
+        <mat-card-actions *ngIf="game.remainingTickets > 0">
           <button
             mat-raised-button
             color="primary"

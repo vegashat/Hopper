@@ -1,3 +1,5 @@
+import { Selection } from "./selection.model";
+
 export interface Team {
   teamId: number;
   name: string;

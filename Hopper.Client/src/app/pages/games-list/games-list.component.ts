@@ -13,11 +13,14 @@ import { Game } from '@models/game.model';
 })
 export class GamesListComponent implements OnInit {
   games: Game[] = [];
+  season: number = 1;
 
-  constructor(private gamesService: GamesService) {}
+  constructor(private gamesService: GamesService) { }
 
   ngOnInit() {
     // TODO: seasonId dynamic later
-    this.gamesService.getSeasonGames(1).subscribe(g => this.games = g);
+    this.gamesService.getSeasonGames(this.season).subscribe(g => {
+      this.games = g
+    });
   }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hopper.Api.Models;
 
 public class Team {
     public int TeamId { get; set; }
@@ -18,12 +19,4 @@ public class Game {
     public int RemainingTickets { get; set; }
     public Team Opponent { get; set; } = new();
     public List<Selection> Selections { get; set; } = new();
-}
-public class Selection
-{
-    public int SelectionId { get; set; }
-    public int GameId { get; set; }
-    public string FirebaseUserId { get; set; }
-    public int Quantity { get; set; }
-    public string DisplayName { get; set; } // optional, but nice for UI
 }

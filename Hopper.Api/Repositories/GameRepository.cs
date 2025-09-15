@@ -6,8 +6,8 @@ namespace Hopper.Api.Repositories;
 public interface IGameRepository
 {
     Task<IEnumerable<Game>> GetAllAsync();
-    Task<Game?> GetByIdAsync(int gameId);
-    Task<IEnumerable<Game>> GetBySeasonAsync(int seasonId);
+    Task<Game?> GetByIdAsync(int gameId);   // updated
+    Task<IEnumerable<Game>> GetBySeasonAsync(int seasonId, int? gameId = null); // optional gameId filter
     Task<Game> CreateAsync(Game game);
     Task<bool> UpdateRemainingTicketsAsync(int gameId, int remainingTickets);
 }
@@ -29,39 +29,16 @@ public class GameRepository : IGameRepository
         FROM vw_game g
         INNER JOIN Team t ON g.OpponentTeamId = t.TeamId
         LEFT JOIN Selection s ON g.GameId = s.GameId
-        LEFT JOIN [User] u ON s.FirebaseUserId = u.FirebaseUserId
+        LEFT JOIN Participant u ON s.FirebaseUserId = u.FirebaseUserId
         ORDER BY g.GameDateTime";
 
-        var gameDict = new Dictionary<int, Game>();
-
-        var result = await conn.QueryAsync<Game, Team, Selection, Game>(
-            sql,
-            (game, team, selection) =>
-            {
-                if (!gameDict.TryGetValue(game.GameId, out var g))
-                {
-                    g = game;
-                    g.Opponent = team;
-                    g.Selections = new List<Selection>();
-                    gameDict.Add(g.GameId, g);
-                }
-
-                if (selection != null)
-                {
-                    selection.DisplayName ??= selection.FirebaseUserId;
-                    g.Selections.Add(selection);
-                }
-
-                return g;
-            },
-            splitOn: "TeamId,SelectionId");
-
-        return result.Distinct().ToList();
+        return await MapGames(conn, sql);
     }
 
     public async Task<Game?> GetByIdAsync(int gameId)
     {
         using var conn = _db.Open();
+
         var sql = @"
         SELECT g.GameId, g.SeasonId, g.GameDateTime, g.Arena, g.RemainingTickets,
                t.TeamId, t.Name, t.City, t.LogoUrl,
@@ -70,24 +47,15 @@ public class GameRepository : IGameRepository
         FROM vw_game g
         INNER JOIN Team t ON g.OpponentTeamId = t.TeamId
         LEFT JOIN Selection s ON g.GameId = s.GameId
-        LEFT JOIN [User] u ON s.FirebaseUserId = u.FirebaseUserId
-        WHERE g.GameId = @gameId
+        LEFT JOIN Participant u ON s.FirebaseUserId = u.FirebaseUserId
+        WHERE GameId = @gameId
         ORDER BY g.GameDateTime";
 
-        var result = await conn.QueryAsync<Game, Team, Game>(
-            sql,
-            (game, team) =>
-            {
-                game.Opponent = team;
-                return game;
-            },
-            new { gameId },
-            splitOn: "TeamId");
-
+        var result = await MapGames(conn, sql, new {gameId });
         return result.FirstOrDefault();
     }
 
-    public async Task<IEnumerable<Game>> GetBySeasonAsync(int seasonId)
+    public async Task<IEnumerable<Game>> GetBySeasonAsync(int seasonId, int? gameId = null)
     {
         using var conn = _db.Open();
 
@@ -99,19 +67,17 @@ public class GameRepository : IGameRepository
         FROM vw_game g
         INNER JOIN Team t ON g.OpponentTeamId = t.TeamId
         LEFT JOIN Selection s ON g.GameId = s.GameId
-        LEFT JOIN [User] u ON s.FirebaseUserId = u.FirebaseUserId
+        LEFT JOIN Participant u ON s.FirebaseUserId = u.FirebaseUserId
         WHERE g.SeasonId = @seasonId
+        /**gameFilter**/
         ORDER BY g.GameDateTime";
 
-        return await conn.QueryAsync<Game, Team, Game>(
-            sql,
-            (game, team) =>
-            {
-                game.Opponent = team;
-                return game;
-            },
-            new { seasonId },
-            splitOn: "TeamId");
+        if (gameId.HasValue)
+            sql = sql.Replace("/**gameFilter**/", "AND g.GameId = @gameId");
+        else
+            sql = sql.Replace("/**gameFilter**/", string.Empty);
+
+        return await MapGames(conn, sql, new { seasonId, gameId });
     }
 
     public async Task<Game> CreateAsync(Game game)
@@ -143,5 +109,35 @@ public class GameRepository : IGameRepository
             "UPDATE Game SET RemainingTickets = @remainingTickets WHERE GameId = @gameId",
             new { gameId, remainingTickets });
         return rows > 0;
+    }
+
+    private async Task<IEnumerable<Game>> MapGames(System.Data.IDbConnection conn, string sql, object? param = null)
+    {
+        var gameDict = new Dictionary<int, Game>();
+
+        var result = await conn.QueryAsync<Game, Team, Selection, Game>(
+            sql,
+            (game, team, selection) =>
+            {
+                if (!gameDict.TryGetValue(game.GameId, out var g))
+                {
+                    g = game;
+                    g.Opponent = team;
+                    g.Selections = new List<Selection>();
+                    gameDict.Add(g.GameId, g);
+                }
+
+                if (selection != null)
+                {
+                    selection.DisplayName ??= selection.FirebaseUserId;
+                    g.Selections.Add(selection);
+                }
+
+                return g;
+            },
+            param,
+            splitOn: "TeamId,SelectionId");
+
+        return result.Distinct().ToList();
     }
 }
