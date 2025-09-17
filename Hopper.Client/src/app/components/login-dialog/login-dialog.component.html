@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>Login</h2>
+<div mat-dialog-content>
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>Select Participant</mat-label>
+    <mat-select [(ngModel)]="selectedUser">
+      <mat-option *ngFor="let p of participants" [value]="p.firebaseUserId">
+        {{ p.displayName }} ({{ p.allottedTickets }} tickets)
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>PIN</mat-label>
+    <input matInput [(ngModel)]="pin" type="password" />
+  </mat-form-field>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="login()" [disabled]="loading">
+    Login
+  </button>
+</div>

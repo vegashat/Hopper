@@ -8,6 +8,7 @@ public interface IParticipantRepository
 {
     Task<Participant?> GetByIdAsync(string firebaseUserId);
     Task<Participant> CreateAsync(Participant participant);
+    Task<bool> UpdatePinAsync(Participant participant);
     Task<IEnumerable<Participant>> GetAllAsync();
     Task<IEnumerable<ParticipantAllotment>> GetAllotmentsBySeasonAsync(int seasonId);
 }
@@ -43,7 +44,16 @@ public class ParticipantRepository : IParticipantRepository
     {
         using var conn = _db.Open();
         return await conn.QueryAsync<Participant>(
-            "SELECT * FROM Participant ORDER BY DisplayName");
+            "SELECT p.*, pa.TicketAllotment as AllottedTickets FROM Participant p inner join ParticipantAllotment pa on p.firebaseUserId = pa.firebaseuserId ORDER BY DisplayName");
+    }
+
+    public async Task<bool> UpdatePinAsync(Participant participant)
+    {
+        using var conn = _db.Open();
+        var rows = await conn.ExecuteAsync(
+            "UPDATE Participant SET Pin = @pin WHERE firebaseUserId = @firebaseUserId",
+            new { participant.Pin, participant.FirebaseUserId });
+        return rows > 0;
     }
 
     public async Task<IEnumerable<ParticipantAllotment>> GetAllotmentsBySeasonAsync(int seasonId)

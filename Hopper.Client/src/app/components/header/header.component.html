@@ -1,16 +1,43 @@
 <mat-toolbar color="primary" class="header-toolbar">
-  <button mat-icon-button (click)="menuToggle.emit()">
+  <!-- Menu -->
+  <button mat-icon-button (click)="menuToggle.emit()" class="menu-btn">
     <mat-icon>menu</mat-icon>
   </button>
 
+  <!-- Title -->
   <span class="title">Hopper Draft</span>
 
-  <div class="draft-status">
-    <span *ngIf="currentPick" class="status-item">
-      <mat-icon>person</mat-icon> Now: {{ currentPick }}
+  <!-- Draft Status -->
+  <div class="draft-status" *ngIf="currentPick || nextPick">
+    <span *ngIf="currentPick" class="status-item current">
+      <mat-icon>person</mat-icon>
+      Now: <strong>{{ currentPick }}</strong>
     </span>
-    <span *ngIf="nextPick" class="status-item">
-      <mat-icon>schedule</mat-icon> Next: {{ nextPick }}
+    <span *ngIf="nextPick" class="status-item next">
+      <mat-icon>schedule</mat-icon>
+      Next: <strong>{{ nextPick }}</strong>
+    </span>
+    <span *ngIf="lastPick" class="status-item next">
+      <mat-icon>schedule</mat-icon>
+      Last: <strong>{{ lastPick }}</strong>
     </span>
   </div>
+
+  <!-- Spacer pushes right-side content -->
+  <span class="spacer"></span>
+
+  <!-- Auth -->
+  <ng-container *ngIf="!(authService.currentUser$ | async); else loggedIn">
+    <button mat-stroked-button color="accent" class="login-btn" (click)="openLogin()">
+      <mat-icon>login</mat-icon> Login
+    </button>
+  </ng-container>
+
+  <ng-template #loggedIn>
+    <span class="user-label">
+      <mat-icon>verified_user</mat-icon>
+      {{ authService.currentUser?.displayName }}
+    </span>
+    <button mat-button class="logout-btn" (click)="logout()">Logout</button>
+  </ng-template>
 </mat-toolbar>

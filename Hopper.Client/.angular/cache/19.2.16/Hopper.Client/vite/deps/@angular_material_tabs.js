@@ -1,21 +1,25 @@
+import "./chunk-OIBNGD5S.js";
 import {
   CdkPortal,
   CdkPortalOutlet,
   TemplatePortal
-} from "./chunk-DV2E23XI.js";
+} from "./chunk-6IA4ECWL.js";
+import {
+  SharedResizeObserver
+} from "./chunk-N34YDGOT.js";
+import {
+  CdkScrollable,
+  ViewportRuler
+} from "./chunk-BAGW4JG4.js";
+import "./chunk-7GOQV6GK.js";
 import {
   MAT_RIPPLE_GLOBAL_OPTIONS,
   MatRipple,
   _StructuralStylesLoader
-} from "./chunk-DBEW7O3G.js";
-import "./chunk-S4EXTNCH.js";
+} from "./chunk-IUU5NMB5.js";
+import "./chunk-LXE7EPBL.js";
 import "./chunk-42FJBLFI.js";
 import "./chunk-IBYU652R.js";
-import {
-  CdkScrollable,
-  ViewportRuler
-} from "./chunk-AXDVGXNH.js";
-import "./chunk-MFT7ESDN.js";
 import "./chunk-2O4WY5GE.js";
 import {
   CdkMonitorFocus,
@@ -25,19 +29,21 @@ import {
   FocusMonitor,
   MatCommonModule,
   SPACE,
-  _CdkPrivateStyleLoader,
   _IdGenerator,
-  _bindEventWithOptions,
   hasModifierKey
-} from "./chunk-3GLDBDJ2.js";
-import {
-  Platform
-} from "./chunk-PGT5K4AS.js";
+} from "./chunk-C73YH2RN.js";
 import {
   Directionality
-} from "./chunk-FWI5NHID.js";
-import "./chunk-GQ6LRKJQ.js";
-import "./chunk-QDIDUNMF.js";
+} from "./chunk-NSWN4JSV.js";
+import {
+  _CdkPrivateStyleLoader,
+  _bindEventWithOptions
+} from "./chunk-IUQ32IP2.js";
+import {
+  Platform
+} from "./chunk-JT3JEVDQ.js";
+import "./chunk-E64RCSHG.js";
+import "./chunk-KD6VHYNG.js";
 import {
   ANIMATION_MODULE_TYPE,
   ChangeDetectionStrategy,
@@ -49,7 +55,6 @@ import {
   ElementRef,
   EventEmitter,
   HostAttributeToken,
-  Injectable,
   InjectionToken,
   Injector,
   Input,
@@ -58,7 +63,6 @@ import {
   Output,
   QueryList,
   Renderer2,
-  RendererFactory2,
   TemplateRef,
   ViewChild,
   ViewChildren,
@@ -83,7 +87,6 @@ import {
   ɵɵcontentQuery,
   ɵɵdefineComponent,
   ɵɵdefineDirective,
-  ɵɵdefineInjectable,
   ɵɵdefineInjector,
   ɵɵdefineNgModule,
   ɵɵelement,
@@ -109,7 +112,7 @@ import {
   ɵɵtext,
   ɵɵtextInterpolate,
   ɵɵviewQuery
-} from "./chunk-ANVCJLGX.js";
+} from "./chunk-BE5KFHOF.js";
 import {
   merge
 } from "./chunk-WPM5VTLQ.js";
@@ -123,127 +126,13 @@ import {
   debounceTime,
   filter,
   of,
-  shareReplay,
   skip,
   startWith,
   switchMap,
   takeUntil,
   timer
 } from "./chunk-4S3KYZTJ.js";
-import "./chunk-WDMUDEB6.js";
-
-// node_modules/@angular/cdk/fesm2022/observers/private.mjs
-var loopLimitExceededErrorHandler = (e) => {
-  if (e instanceof ErrorEvent && e.message === "ResizeObserver loop limit exceeded") {
-    console.error(`${e.message}. This could indicate a performance issue with your app. See https://github.com/WICG/resize-observer/blob/master/explainer.md#error-handling`);
-  }
-};
-var SingleBoxSharedResizeObserver = class {
-  _box;
-  /** Stream that emits when the shared observer is destroyed. */
-  _destroyed = new Subject();
-  /** Stream of all events from the ResizeObserver. */
-  _resizeSubject = new Subject();
-  /** ResizeObserver used to observe element resize events. */
-  _resizeObserver;
-  /** A map of elements to streams of their resize events. */
-  _elementObservables = /* @__PURE__ */ new Map();
-  constructor(_box) {
-    this._box = _box;
-    if (typeof ResizeObserver !== "undefined") {
-      this._resizeObserver = new ResizeObserver((entries) => this._resizeSubject.next(entries));
-    }
-  }
-  /**
-   * Gets a stream of resize events for the given element.
-   * @param target The element to observe.
-   * @return The stream of resize events for the element.
-   */
-  observe(target) {
-    if (!this._elementObservables.has(target)) {
-      this._elementObservables.set(target, new Observable((observer) => {
-        const subscription = this._resizeSubject.subscribe(observer);
-        this._resizeObserver?.observe(target, {
-          box: this._box
-        });
-        return () => {
-          this._resizeObserver?.unobserve(target);
-          subscription.unsubscribe();
-          this._elementObservables.delete(target);
-        };
-      }).pipe(
-        filter((entries) => entries.some((entry) => entry.target === target)),
-        // Share a replay of the last event so that subsequent calls to observe the same element
-        // receive initial sizing info like the first one. Also enable ref counting so the
-        // element will be automatically unobserved when there are no more subscriptions.
-        shareReplay({
-          bufferSize: 1,
-          refCount: true
-        }),
-        takeUntil(this._destroyed)
-      ));
-    }
-    return this._elementObservables.get(target);
-  }
-  /** Destroys this instance. */
-  destroy() {
-    this._destroyed.next();
-    this._destroyed.complete();
-    this._resizeSubject.complete();
-    this._elementObservables.clear();
-  }
-};
-var SharedResizeObserver = class _SharedResizeObserver {
-  _cleanupErrorListener;
-  /** Map of box type to shared resize observer. */
-  _observers = /* @__PURE__ */ new Map();
-  /** The Angular zone. */
-  _ngZone = inject(NgZone);
-  constructor() {
-    if (typeof ResizeObserver !== "undefined" && (typeof ngDevMode === "undefined" || ngDevMode)) {
-      this._ngZone.runOutsideAngular(() => {
-        const renderer = inject(RendererFactory2).createRenderer(null, null);
-        this._cleanupErrorListener = renderer.listen("window", "error", loopLimitExceededErrorHandler);
-      });
-    }
-  }
-  ngOnDestroy() {
-    for (const [, observer] of this._observers) {
-      observer.destroy();
-    }
-    this._observers.clear();
-    this._cleanupErrorListener?.();
-  }
-  /**
-   * Gets a stream of resize events for the given target element and box type.
-   * @param target The element to observe for resizes.
-   * @param options Options to pass to the `ResizeObserver`
-   * @return The stream of resize events for the element.
-   */
-  observe(target, options) {
-    const box = options?.box || "content-box";
-    if (!this._observers.has(box)) {
-      this._observers.set(box, new SingleBoxSharedResizeObserver(box));
-    }
-    return this._observers.get(box).observe(target);
-  }
-  static ɵfac = function SharedResizeObserver_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _SharedResizeObserver)();
-  };
-  static ɵprov = ɵɵdefineInjectable({
-    token: _SharedResizeObserver,
-    factory: _SharedResizeObserver.ɵfac,
-    providedIn: "root"
-  });
-};
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(SharedResizeObserver, [{
-    type: Injectable,
-    args: [{
-      providedIn: "root"
-    }]
-  }], () => [], null);
-})();
+import "./chunk-J25FJFZE.js";
 
 // node_modules/@angular/material/fesm2022/tabs.mjs
 var _c0 = ["*"];

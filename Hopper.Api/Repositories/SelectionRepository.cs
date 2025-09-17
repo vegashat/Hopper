@@ -7,7 +7,7 @@ public interface ISelectionRepository
 {
     Task<Selection> CreateAsync(Selection selection);
     Task<IEnumerable<Selection>> GetByUserAsync(string firebaseUserId);
-    Task<IEnumerable<Selection>> GetByGameAsync(int gameId);
+    Task<Selection> GetByGameAsync(int gameId);
     Task DeleteAsync(int selectionId);
     Task<IEnumerable<(string FirebaseUserId, int Tickets)>> GetPickedByUserAsync(int seasonId);
     Task<bool> AnyTicketsRemainingAsync(int seasonId);
@@ -90,10 +90,10 @@ public class SelectionRepository : ISelectionRepository
             new { firebaseUserId });
     }
 
-    public async Task<IEnumerable<Selection>> GetByGameAsync(int gameId)
+    public async Task<Selection> GetByGameAsync(int gameId)
     {
         using var conn = _db.Open();
-        return await conn.QueryAsync<Selection>(
+        return await conn.QuerySingleAsync<Selection>(
             "SELECT * FROM Selection WHERE GameId = @gameId ORDER BY PickedUtc ASC",
             new { gameId });
     }

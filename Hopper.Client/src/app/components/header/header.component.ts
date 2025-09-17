@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,9 @@ import { MatSidenav } from '@angular/material/sidenav';
 
 import { DraftService } from '@services/draft.service';
 import { DraftStatus } from '@models/draft.model';
+import { LoginDialogComponent } from '@components/login-dialog/login-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
+import { AuthService } from '@services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -18,6 +21,8 @@ import { DraftStatus } from '@models/draft.model';
 export class HeaderComponent implements OnInit {
   @Input() sidenav!: MatSidenav;
   @Output() menuToggle = new EventEmitter<void>();
+  dialog = inject(MatDialog)
+  authService = inject(AuthService);
 
   seasonId = 1;
   status: DraftStatus | null = null;
@@ -47,5 +52,21 @@ export class HeaderComponent implements OnInit {
   get nextPick(): string {
     // The "next" pick is the second in upcoming
     return this.status?.upcoming?.[1]?.displayName ?? 'N/A';
+  }
+
+  get lastPick(): string {
+
+    const lastPick = this.status?.history?.[0];
+    const name = this.status?.users.find(u => u.firebaseUserId == lastPick?.firebaseUserId)?.displayName ?? 'N/A';
+    return name;
+    // return `${name} picked ${lastPick?.quantity} tix to ${lastPick?.team.name}`;
+  }
+
+  openLogin() : void {
+    this.dialog.open(LoginDialogComponent, {width: '400px'});
+  }
+
+  logout() : void {
+    this.authService.logout();
   }
 }

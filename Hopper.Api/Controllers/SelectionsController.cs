@@ -12,28 +12,42 @@ namespace Hopper.Api.Controllers;
 public class SelectionsController : ControllerBase
 {
     private readonly ISelectionRepository _repo;
+    private readonly IGameRepository _gameRepo;
     private readonly DraftEngine _draftEngine;
     private readonly IHubContext<DraftHub> _hub;
-    public SelectionsController(ISelectionRepository repo, DraftEngine draftEngine, IHubContext<DraftHub> hub)
+    public SelectionsController(ISelectionRepository repo, IGameRepository gameRepo, DraftEngine draftEngine, IHubContext<DraftHub> hub)
     {
         _repo = repo;
+        _gameRepo = gameRepo;
         _draftEngine = draftEngine;
         _hub = hub;
     }
 
     [HttpPost("{seasonId}")]
-    public async Task<ActionResult<Selection>> Create(int seasonId, [FromBody] Selection request)
+    public async Task<ActionResult<Selection>> Create(int seasonId, [FromBody] Selection[] request)
     {
         try
         {
-            var created = await _repo.CreateAsync(request);
+            var created = await _repo.CreateAsync(request[0]);
+            //See if this is a split request.
+            if (request.Length > 1)
+            {
+                await _repo.CreateAsync(request[1]);
+            }
 
             // Advance draft queue
-            await _draftEngine.AdvanceQueueAfterSelectionAsync(seasonId, request.FirebaseUserId, request.GameId);
+            await _draftEngine.AdvanceQueueAfterSelectionAsync(seasonId, request[0].FirebaseUserId, request[0].GameId);
 
-            // Broadcast updates
+            // 🔑 Fetch updated game so clients know about remaining tickets
+            var updatedGame = await _gameRepo.GetByIdAsync(request[0].GameId);
+
+            // Broadcast selection with updated game info
             await _hub.Clients.Group(DraftHub.SeasonGroup(seasonId.ToString()))
-                .SendAsync("SelectionMade", created);
+                .SendAsync("SelectionMade", new
+                {
+                    Selection = created,
+                    Game = updatedGame
+                });
 
             var upcoming = await _draftEngine.GetUpcomingAsync(seasonId, 3);
             await _hub.Clients.Group(DraftHub.SeasonGroup(seasonId.ToString()))
@@ -46,8 +60,6 @@ public class SelectionsController : ControllerBase
         catch (ArgumentException ex) { return BadRequest(ex.Message); }
         catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
     }
-
- 
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)

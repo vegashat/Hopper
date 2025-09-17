@@ -10,6 +10,7 @@ export interface DraftPick {
   draftId: number;
   firebaseUserId: string;
   pickOrder: number;
+  gameId : number;
   team: {
     teamId: number;
     name: string;
@@ -18,6 +19,7 @@ export interface DraftPick {
   quantity: number;
   createdUtc: string;
   claimedUtc: string;
+  remainingTickets: number;
 }
 
 export interface DraftStatus {
@@ -33,6 +35,7 @@ export interface UpcomingPick {
   pickOrder: number;
   firebaseUserId: string;
   displayName: string;
+  remainingTickets: number;
 }
 
 export interface UserProgress {

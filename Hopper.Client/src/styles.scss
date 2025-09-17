@@ -1,4 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
+@import 'ngx-toastr/toastr';
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
@@ -8,4 +9,20 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 .mat-drawer-content,
 .mat-sidenav-content {
   background: transparent !important;
+}
+
+.toast-success { background: #4caf50; color: #fff; }
+.toast-error   { background: #f44336; color: #fff; }
+.toast-info    { background: #2196f3; color: #fff; }
+.toast-warn    { background: #ff9800; color: #fff; }
+
+// Make ngx-toastr toasts responsive
+#toast-container > div {
+  min-width: 250px;          // ensures they don’t get too tiny
+  max-width: 50vw;           // cap at 80% of viewport width
+  width: auto !important;    // let them grow naturally
+  white-space: normal;       // allow wrapping if needed
+  word-wrap: break-word;     // break long words/URLs if necessary
+  text-align: center;        // keep your centered look
+  margin: 0 auto;            // center horizontally
 }

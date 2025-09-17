@@ -1,48 +1,70 @@
-.title {
-  font-weight: bold;
-  margin-left: 8px;
-}
+.header-toolbar {
+  background-color: #1976d2; // Thunder blue
+  color: white;
+  padding: 0 1rem;
 
-.spacer {
-  flex: 1 1 auto;
-}
-
-.draft-status-mini {
-  display: flex;
-  gap: 1.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-
-  .current {
-    color: #4caf50;
+  .menu-btn {
+    margin-right: 0.5rem;
   }
 
-  .next {
-    color: #2196f3;
+  .title {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-right: 1rem;
   }
-}
-.draft-status {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  font-size: 0.9rem;
 
-  .status-item {
+  .draft-status {
     display: flex;
+    gap: 1rem;
     align-items: center;
-    gap: 0.25rem;
+    font-size: 0.9rem;
 
-    mat-icon {
-      font-size: 20px;
-      vertical-align: middle;
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+
+      mat-icon {
+        font-size: 18px;
+      }
+
+      &.current {
+        color: #a5d6a7; // soft green
+      }
+
+      &.next {
+        color: #90caf9; // soft blue
+      }
     }
   }
-}
-mat-toolbar {
-  background-color: #1976d2; // your Thunder blue
-  color: white; // make all text/icons white
-}
 
-mat-toolbar .mat-icon {
-  color: white;
+  .spacer {
+    flex: 1 1 auto;
+  }
+
+  .login-btn {
+    font-weight: 600;
+    mat-icon {
+      font-size: 18px;
+      margin-right: 4px;
+    }
+  }
+
+  .user-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-right: 1rem;
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 18px;
+      color: #ffeb3b; // gold for emphasis
+    }
+  }
+
+  .logout-btn {
+    color: #fff;
+    font-weight: 600;
+  }
 }

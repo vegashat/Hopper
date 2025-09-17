@@ -49,4 +49,28 @@ public class ParticipantsController : ControllerBase
         var participants = await _repo.GetAllAsync();
         return Ok(participants);
     }
+
+    [HttpPost("claim")]
+    public async Task<IActionResult> ClaimAccount([FromBody] ClaimRequest req)
+    {
+        var participant = await _repo.GetByIdAsync(req.FirebaseUserId);
+        if (participant == null) return NotFound();
+
+        if (participant.Pin is null && req.Pin.Length > 0 )
+        {
+            // First time claim → set PIN
+            participant.Pin = req.Pin;
+            await _repo.UpdatePinAsync(participant);
+            return Ok(new { success = true, message = "PIN set. Account claimed!" });
+        }
+        else
+        {
+            // Already has PIN → must match
+            if (participant.Pin == req.Pin && participant.Pin.Length > 0)
+                return Ok(new { success = true, message = "Login successful!" });
+
+            return Unauthorized(new { success = false, message = "Invalid PIN." });
+        }
+    }
+
 }

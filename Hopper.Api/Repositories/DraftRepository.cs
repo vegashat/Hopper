@@ -71,11 +71,12 @@ public class DraftRepository : IDraftRepository
         using var conn = _db.Open();
 
         var sql = @"
-        SELECT dp.DraftPickId, dp.DraftId, dp.FirebaseUserId, dp.PickOrder, dp.ClaimedUtc,
+        SELECT dp.DraftPickId, dp.DraftId, dp.FirebaseUserId, p.DisplayName, dp.PickOrder, dp.ClaimedUtc,
                ISNULL(s.Quantity, 0) AS Quantity,
                t.TeamId, t.Name, t.City, t.LogoUrl
         FROM DraftPick dp
         LEFT JOIN Selection s ON dp.FirebaseUserId = s.FirebaseUserId and dp.GameId = s.GameId
+        LEFT JOIN Participant p on dp.FirebaseUserId = p.FirebaseUserId
         LEFT JOIN Game g ON s.GameId = g.GameId
         LEFT JOIN Team t ON g.OpponentTeamId = t.TeamId
         WHERE dp.DraftId = @draftId
@@ -97,12 +98,26 @@ public class DraftRepository : IDraftRepository
     public async Task<IEnumerable<DraftPick>> GetUpcomingPicksAsync(int draftId, int take = 3)
     {
         using var conn = _db.Open();
-        return await conn.QueryAsync<DraftPick>(@"
-            SELECT TOP (@take) *
-            FROM DraftPick
-            WHERE DraftId=@draftId AND ClaimedUtc IS NULL
-            ORDER BY PickOrder",
-            new { draftId, take });
+
+        var sql = @"
+        WITH PickedTickets AS (
+            SELECT s.FirebaseUserId, SUM(s.Quantity) AS Picked
+            FROM Selection s
+            INNER JOIN Game g ON s.GameId = g.GameId
+            WHERE g.SeasonId = (SELECT SeasonId FROM Draft WHERE DraftId = @draftId)
+            GROUP BY s.FirebaseUserId
+        )
+        SELECT TOP (@take) dp.*,
+               p.DisplayName,
+               ISNULL(a.TicketAllotment,0) - ISNULL(pt.Picked,0) AS RemainingTickets
+        FROM DraftPick dp
+        LEFT JOIN Participant p ON dp.FirebaseUserId = p.FirebaseUserId
+        LEFT JOIN ParticipantAllotment a ON a.FirebaseUserId = dp.FirebaseUserId AND a.SeasonId = (SELECT SeasonId FROM Draft WHERE DraftId = @draftId)
+        LEFT JOIN PickedTickets pt ON dp.FirebaseUserId = pt.FirebaseUserId
+        WHERE dp.DraftId = @draftId AND dp.ClaimedUtc IS NULL
+        ORDER BY dp.PickOrder;";
+
+        return await conn.QueryAsync<DraftPick>(sql, new { draftId, take });
     }
 
     public async Task<int> GetLastPickOrderAsync(int draftId)

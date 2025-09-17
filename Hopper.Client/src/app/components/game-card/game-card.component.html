@@ -18,26 +18,42 @@
         <!-- Who picked -->
         <div *ngIf="game.selections.length > 0" class="picks">
           <div *ngFor="let sel of game.selections">
-            🎟️ {{ sel.displayName || sel.firebaseUserId }} picked {{ sel.quantity }}
+            {{ sel.displayName || sel.firebaseUserId }} picked {{ sel.quantity }}
           </div>
         </div>
 
         <p>Remaining tickets: {{ game.remainingTickets }}</p>
 
         <!-- Only show buttons if tickets remain -->
-        <mat-card-actions *ngIf="game.remainingTickets > 0">
+        <mat-card-actions *ngIf="game.remainingTickets > 0 && canSelect">
           <button mat-raised-button color="primary" (click)="pick(2)"
             [disabled]="game.remainingTickets < 2 || !draftIsActive">
             Pick 2
           </button>
-          <button mat-raised-button color="accent" (click)="pick(4)"
-            [disabled]="game.remainingTickets < 4 || !draftIsActive">
+          <!-- Pick 4 with split option -->
+          <button mat-raised-button color="accent" [matMenuTriggerFor]="pick4Menu"
+            [disabled]="game.remainingTickets < 4 || !draftIsActive || CurrentPickerRemainingTickets < 4">
             Pick 4
+            <mat-icon>arrow_drop_down</mat-icon>
           </button>
+
+          <mat-menu #pick4Menu="matMenu">
+            <button mat-menu-item (click)="pick(4)">
+              <mat-icon>check</mat-icon>
+              <span>Pick 4</span>
+            </button>
+            <button mat-menu-item (click)="openSplitDialog(game)">
+              <mat-icon>call_split</mat-icon>
+              <span>Split 4</span>
+            </button>
+          </mat-menu>
         </mat-card-actions>
 
         <div *ngIf="!draftIsActive" class="draft-warning">
           Draft isn’t active yet. Please wait for the admin to start.
+        </div>
+        <div *ngIf="CurrentPickerRemainingTickets < 4 && game.remainingTickets >= 4" class="draft-warning">
+          You only have two tickets remaining
         </div>
       </div>
     </div>

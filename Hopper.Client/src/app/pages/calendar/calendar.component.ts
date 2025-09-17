@@ -34,36 +34,6 @@ export class CalendarComponent implements OnInit {
     timeZone: 'local',
     dayMaxEventRows: true,
 
-    //   eventContent: (arg) => {
-    //     const logo = arg.event.extendedProps['logo'] as string | undefined;
-    //     const title = arg.event.title;
-    //     const time = arg.event.start
-    //       ? new Date(arg.event.start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    //       : '';
-    //     const selections = arg.event.extendedProps['selections'] || [];
-    //     const remaining = arg.event.extendedProps['remaining'] ?? 0;
-
-    //     let html = `
-    //   <div class="logo-cell ${remaining == 0 ? 'disabled' : ''}">
-    //     ${logo ? `<img class="opponent-logo" src="${logo}" alt="${title}" />` : ''}
-    //     <div class="game-title">${title} - ${time}</div>
-    //        <div class="remaining">
-    //       ${remaining > 0 ? `${remaining} tickets left` : 'Sold out'}
-    //     </div>
-
-    //     <div class="participants">
-    //       ${selections.map((s: any) =>
-    //       `<div class="participant">${s.displayName || s.firebaseUserId} (${s.quantity})</div>`
-    //     ).join('')}
-    //     </div>
-    //   </div>
-    // `;
-
-    //     let content = document.createElement('div');
-    //     content.innerHTML = html.trim();
-
-    //     return { domNodes: [content] };
-    //   },
     eventContent: (arg) => {
       const logo = arg.event.extendedProps['logo'] as string | undefined;
       const title = arg.event.title;

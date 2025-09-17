@@ -13,7 +13,7 @@ export class SelectionsService {
 
   constructor(private http: HttpClient) {}
 
-  makeSelection(seasonId: number, selection: Selection): Observable<Selection> {
+  makeSelection(seasonId: number, selection: Selection[]): Observable<Selection> {
     return this.http.post<Selection>(`${this.baseUrl}/${seasonId}`, selection);
   }
 
