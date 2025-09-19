@@ -7,6 +7,12 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "MilkHoney01!"
+      SA_PASSWORD: "MilkHoney01!"
+
+      DB_NAME: "Hopper"
+      BAK_PATH: "/var/opt/sqlserver/backup/Hopper.bak"
+      FORCE_RESTORE: "1"   # set to 0 to skip if DB exists
+
     ports:
       - "1435:1433"
     volumes:
