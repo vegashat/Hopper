@@ -16,7 +16,7 @@ services:
     ports:
       - "1435:1433"
     volumes:
-      - mssql_data:/var/opt/mssql
+      - hopper_mssql_data:/var/opt/mssql
       - ./db/backup:/var/opt/sqlserver/backup:ro
     restart: unless-stopped
     networks:
@@ -67,4 +67,4 @@ networks:
     driver: bridge
 
 volumes:
-  mssql_data:
+  hopper_mssql_data:
