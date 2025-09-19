@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, RouterOutlet } from '@angular/router';
@@ -52,6 +52,13 @@ export class ShellComponent {
   searchOpen = false;
   showAvailableOnly = false;
   filters: GameFilters | null = null;
+  isCompact = false;
+
+  constructor() {
+    this.updateCompactMode();
+  }
+
+
 
   toggleSearch() {
     this.searchOpen = !this.searchOpen;
@@ -90,5 +97,14 @@ export class ShellComponent {
     if (this.filters?.months?.length) count += this.filters.months.length;
     if (this.filters?.daysOfWeek?.length) count += this.filters.daysOfWeek.length;
     return count;
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    this.updateCompactMode();
+  }
+
+  private updateCompactMode() {
+    this.isCompact = window.innerWidth < 600;
   }
 }

@@ -17,7 +17,7 @@ services:
       - "1435:1433"
     volumes:
       - hopper_mssql_data:/var/opt/mssql
-      - ./db/backup:/var/opt/sqlserver/backup:ro
+      - ./db/backup:/var/opt/sqlserver/backup
     restart: unless-stopped
     networks:
       - hoppernet

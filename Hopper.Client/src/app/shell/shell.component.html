@@ -48,27 +48,22 @@
           <button mat-icon-button routerLink="/participants"><mat-icon>groups</mat-icon></button>
         </div>
 
-        <!-- Center: Expanding search -->
-        <div class="toolbar-center" [class.expanded]="searchOpen">
+        <!-- Center/Right: Search -->
+        <div class="toolbar-center" [class.compact]="isCompact">
           <div class="search-box">
             <mat-icon>search</mat-icon>
-            <input type="text"
-                   placeholder="Search games"
-                   [(ngModel)]="searchTerm"
-                   (ngModelChange)="onSearchChange($event)" />
+            <input type="text" placeholder="Search games" [(ngModel)]="searchTerm"
+              (ngModelChange)="onSearchChange($event)" />
 
-            <button *ngIf="searchTerm" mat-icon-button class="clear-btn"
-                    (click)="searchTerm=''; onSearchChange('')">
-              <mat-icon>close</mat-icon>
+            <!-- Filter stays inside box when cramped -->
+            <button mat-icon-button (click)="openFilterDialog()" matTooltip="Filter" [matBadge]="filterCount()"
+              matBadgeColor="warn" [matBadgeHidden]="filterCount() === 0">
+              <mat-icon>filter_list</mat-icon>
             </button>
 
-            <!-- Filters -->
-            <button mat-icon-button (click)="openFilterDialog()"
-                    matTooltip="Filter"
-                    [matBadge]="filterCount()"
-                    matBadgeColor="warn"
-                    [matBadgeHidden]="filterCount() === 0">
-              <mat-icon>filter_list</mat-icon>
+            <!-- Clear button only if typing -->
+            <button *ngIf="searchTerm" mat-icon-button class="clear-btn" (click)="searchTerm=''; onSearchChange('')">
+              <mat-icon>close</mat-icon>
             </button>
           </div>
         </div>

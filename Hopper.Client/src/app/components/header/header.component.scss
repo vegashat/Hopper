@@ -79,3 +79,42 @@
     font-weight: 600;
   }
 }
+
+/* Medium screens: shrink fonts */
+@media (max-width: 600px) {
+  .header-toolbar {
+    .title {
+      font-size: 1rem;
+    }
+
+    .draft-status {
+      gap: 1rem;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+/* Small screens: hide labels, shrink everything */
+/* Small screens: hide labels only */
+@media (max-width: 480px) {
+  .header-toolbar {
+    .title {
+      display: none; // hide Hopper Draft title
+    }
+
+    .draft-status {
+      gap: 0.5rem;
+      font-size: 0.75rem;
+
+      .status-item {
+        .label {
+          display: none; // hide Now:/Next:/Last: text ONLY
+        }
+      }
+    }
+
+    .user-label {
+      display: none; // optional: hide username, keep icon
+    }
+  }
+}

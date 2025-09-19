@@ -14,15 +14,15 @@
   <div class="draft-status" *ngIf="currentPick || nextPick || lastPick">
     <span *ngIf="currentPick" class="status-item current">
       <mat-icon>person</mat-icon>
-      Now: <strong>{{ currentPick }}</strong>
+      <span class="label">Now:</span> <strong>{{ currentPick }}</strong>
     </span>
     <span *ngIf="nextPick" class="status-item next">
       <mat-icon>schedule</mat-icon>
-      Next: <strong>{{ nextPick }}</strong>
+      <span class="label">Next:</span> <strong>{{ nextPick }}</strong>
     </span>
     <span *ngIf="lastPick" class="status-item last">
       <mat-icon>history</mat-icon>
-      Last: <strong>{{ lastPick }}</strong>
+      <span class="label">Last:</span> <strong>{{ lastPick }}</strong>
     </span>
   </div>
 

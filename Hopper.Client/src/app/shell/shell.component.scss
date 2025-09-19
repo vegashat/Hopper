@@ -15,22 +15,6 @@
   z-index: 100;
 }
 
-.shell-footer {
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
-}
-.shell-container {
-  height: 100vh;
-}
-
-.shell-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
 .shell-content {
   flex: 1;
   overflow-y: auto;
@@ -42,6 +26,13 @@
     #ffb74d 50%,  // mid orange
     #ffe0b2 100%  // pale toward bottom
   );
+}
+
+.shell-footer {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
 }
 
 .games-toolbar {
@@ -87,16 +78,60 @@
         background: transparent;
         font-size: 1rem;
       }
+
+      button {
+        margin-left: 2px;
+      }
+    }
+
+    &.compact .search-box {
+      min-width: 120px;
+      max-width: 200px;
+      padding: 2px 4px;
+
+      input {
+        font-size: 0.85rem;
+      }
     }
   }
 
-  .clear-btn {
-    width: 36px;
-    height: 36px;
+  .clear-btn mat-icon {
+    font-size: 20px;
+    color: #888;
+  }
+}
 
-    mat-icon {
-      font-size: 20px;
-      color: #888;
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .games-toolbar {
+    .toolbar-right button {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+    }
+
+    .toolbar-center .search-box {
+      min-width: 160px;
+      max-width: 250px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .games-toolbar {
+    flex-wrap: nowrap;
+
+    .toolbar-left {
+      gap: 0.25rem;
+    }
+
+    .toolbar-center .search-box {
+      min-width: 120px;
+      max-width: 160px;
+    }
+
+    .toolbar-right button {
+      font-size: 0.65rem;
+      padding: 1px 4px;
     }
   }
 }
