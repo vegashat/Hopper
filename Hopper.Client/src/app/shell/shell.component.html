@@ -39,9 +39,46 @@
         <router-outlet></router-outlet>
       </div>
 
-      <!-- Footer sticks at bottom -->
-      <mat-toolbar color="accent" class="shell-footer">
-        <span>© 2025 Hopper Draft</span>
+      <mat-toolbar color="accent" class="shell-footer games-toolbar">
+        <!-- Left: Quick links -->
+        <div class="toolbar-left">
+          <button mat-icon-button routerLink="/games"><mat-icon>sports_basketball</mat-icon></button>
+          <button mat-icon-button routerLink="/calendar"><mat-icon>calendar_month</mat-icon></button>
+          <button mat-icon-button routerLink="/history"><mat-icon>history</mat-icon></button>
+          <button mat-icon-button routerLink="/participants"><mat-icon>groups</mat-icon></button>
+        </div>
+
+        <!-- Center: Expanding search -->
+        <div class="toolbar-center" [class.expanded]="searchOpen">
+          <div class="search-box">
+            <mat-icon>search</mat-icon>
+            <input type="text"
+                   placeholder="Search games"
+                   [(ngModel)]="searchTerm"
+                   (ngModelChange)="onSearchChange($event)" />
+
+            <button *ngIf="searchTerm" mat-icon-button class="clear-btn"
+                    (click)="searchTerm=''; onSearchChange('')">
+              <mat-icon>close</mat-icon>
+            </button>
+
+            <!-- Filters -->
+            <button mat-icon-button (click)="openFilterDialog()"
+                    matTooltip="Filter"
+                    [matBadge]="filterCount()"
+                    matBadgeColor="warn"
+                    [matBadgeHidden]="filterCount() === 0">
+              <mat-icon>filter_list</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Toggle -->
+        <div class="toolbar-right">
+          <button mat-raised-button color="primary" (click)="toggleAvailable()">
+            {{ showAvailableOnly ? 'Show All' : 'Show Available' }}
+          </button>
+        </div>
       </mat-toolbar>
     </div>
   </mat-sidenav-content>

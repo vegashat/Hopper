@@ -71,17 +71,37 @@ public class DraftRepository : IDraftRepository
         using var conn = _db.Open();
 
         var sql = @"
-        SELECT dp.DraftPickId, dp.DraftId, dp.FirebaseUserId, p.DisplayName, dp.PickOrder, dp.ClaimedUtc,
-               ISNULL(s.Quantity, 0) AS Quantity,
-               t.TeamId, t.Name, t.City, t.LogoUrl
-        FROM DraftPick dp
-        LEFT JOIN Selection s ON dp.FirebaseUserId = s.FirebaseUserId and dp.GameId = s.GameId
-        LEFT JOIN Participant p on dp.FirebaseUserId = p.FirebaseUserId
-        LEFT JOIN Game g ON s.GameId = g.GameId
-        LEFT JOIN Team t ON g.OpponentTeamId = t.TeamId
-        WHERE dp.DraftId = @draftId
-        ORDER BY dp.PickOrder;";
-
+        SELECT
+                dp.DraftPickId,
+                dp.DraftId,
+                dp.GameId,
+                dp.PickOrder,
+                dp.ClaimedUtc,
+                p.FirebaseUserId,
+                p.DisplayName,
+                pp.FirebaseUserId AS PickedById,
+                pp.DisplayName AS PickedByDisplayName,
+                t.TeamId,
+                t.Name,
+                t.City,
+                t.LogoUrl,
+                -- aggregate who claimed tickets
+                (ISNULL(s.Quantity, 0)) AS TotalQuantity
+            FROM DraftPick dp
+                INNER JOIN Selection s
+                ON dp.GameId = s.GameId and dp.DraftPickId = s.draftPickId
+                left JOIN Participant p
+                ON s.FirebaseUserId = p.FirebaseUserId
+                left JOIN Participant pp
+                ON dp.FirebaseUserId = pp.FirebaseUserId
+                LEFT JOIN Game g
+                ON dp.GameId = g.GameId
+                LEFT JOIN Team t
+                ON g.OpponentTeamId = t.TeamId
+            WHERE dp.DraftId = @draftId
+                AND dp.ClaimedUtc IS NOT NULL
+            ORDER BY dp.PickOrder DESC, dp.ClaimedUtc DESC
+";
         var picks = await conn.QueryAsync<DraftPick, Team, DraftPick>(
             sql,
             (pick, team) =>
@@ -100,22 +120,22 @@ public class DraftRepository : IDraftRepository
         using var conn = _db.Open();
 
         var sql = @"
-        WITH PickedTickets AS (
-            SELECT s.FirebaseUserId, SUM(s.Quantity) AS Picked
-            FROM Selection s
-            INNER JOIN Game g ON s.GameId = g.GameId
-            WHERE g.SeasonId = (SELECT SeasonId FROM Draft WHERE DraftId = @draftId)
-            GROUP BY s.FirebaseUserId
-        )
-        SELECT TOP (@take) dp.*,
-               p.DisplayName,
-               ISNULL(a.TicketAllotment,0) - ISNULL(pt.Picked,0) AS RemainingTickets
-        FROM DraftPick dp
-        LEFT JOIN Participant p ON dp.FirebaseUserId = p.FirebaseUserId
-        LEFT JOIN ParticipantAllotment a ON a.FirebaseUserId = dp.FirebaseUserId AND a.SeasonId = (SELECT SeasonId FROM Draft WHERE DraftId = @draftId)
-        LEFT JOIN PickedTickets pt ON dp.FirebaseUserId = pt.FirebaseUserId
-        WHERE dp.DraftId = @draftId AND dp.ClaimedUtc IS NULL
-        ORDER BY dp.PickOrder;";
+                    WITH PickedTickets AS (
+                        SELECT s.FirebaseUserId, SUM(s.Quantity) AS Picked
+                        FROM Selection s
+                        INNER JOIN Game g ON s.GameId = g.GameId
+                        WHERE g.SeasonId = (SELECT SeasonId FROM Draft WHERE DraftId = @draftId)
+                        GROUP BY s.FirebaseUserId
+                    )
+                    SELECT TOP (@take) dp.*,
+                        p.DisplayName,
+                        ISNULL(a.TicketAllotment,0) - ISNULL(pt.Picked,0) AS RemainingTickets
+                    FROM DraftPick dp
+                    LEFT JOIN Participant p ON dp.FirebaseUserId = p.FirebaseUserId
+                    LEFT JOIN ParticipantAllotment a ON a.FirebaseUserId = dp.FirebaseUserId AND a.SeasonId = (SELECT SeasonId FROM Draft WHERE DraftId = @draftId)
+                    LEFT JOIN PickedTickets pt ON dp.FirebaseUserId = pt.FirebaseUserId
+                    WHERE dp.DraftId = @draftId AND dp.ClaimedUtc IS NULL
+                    ORDER BY dp.PickOrder;";
 
         return await conn.QueryAsync<DraftPick>(sql, new { draftId, take });
     }

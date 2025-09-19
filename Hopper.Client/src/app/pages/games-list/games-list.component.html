@@ -1,37 +1,3 @@
-<mat-toolbar class="games-toolbar" color="primary">
-  <!-- Search -->
-  <div class="search-box">
-    <mat-icon>search</mat-icon>
-    <input type="text"
-           placeholder="Search games"
-           [(ngModel)]="searchTerm"
-           (ngModelChange)="applyFilters()" />
-    <button *ngIf="searchTerm"
-            mat-icon-button
-            class="clear-btn"
-            (click)="searchTerm=''; applyFilters()">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
-
-  <span class="spacer"></span>
-
-  <!-- Filters -->
-  <button mat-icon-button
-          (click)="openFilterDialog()"
-          matTooltip="Filter"
-          [matBadge]="filterCount()"
-          matBadgeColor="warn"
-          [matBadgeHidden]="filterCount() === 0">
-    <mat-icon>filter_list</mat-icon>
-  </button>
-
-  <!-- Toggle -->
-  <button mat-button (click)="toggleAvailable()">
-    {{ showAvailableOnly ? 'Show All' : 'Show Available' }}
-  </button>
-</mat-toolbar>
-
 <div class="games-list">
   <app-game-card *ngFor="let game of filteredGames" [game]="game">
   </app-game-card>

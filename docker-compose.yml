@@ -1,0 +1,64 @@
+services:
+  hopperdb:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    container_name: hopperdb
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "MilkHoney01!"
+    ports:
+      - "1435:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+      - ./db/backup:/var/opt/sqlserver/backup:ro
+    restart: unless-stopped
+    networks:
+      - hoppernet
+
+ # hopperdb-restore:
+ #   build:
+ #     context: ./db-restore
+ #   environment:
+ #     SA_PASSWORD: "MilkHoney01!"
+ #     DB_NAME: "Hopper"
+ #     SQL_HOST: "hopperdb"
+ #     BAK_PATH: "/backup/Hopper.bak"
+ #   volumes:
+ #     - ./db/backup:/backup:ro
+ #   depends_on:
+ #     - hopperdb
+ #   networks:
+ #     - hoppernet
+ #   restart: "no"   # run once, then exit
+
+  hopper_api:
+    build:
+      context: ./Hopper.Api
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    ports:
+      - "5154:8080"
+    depends_on:
+      - hopperdb
+    networks:
+      - hoppernet
+
+  hopper_client:
+    build:
+      context: ./Hopper.Client
+      dockerfile: Dockerfile
+    ports:
+      - "4278:80"
+    depends_on:
+      - hopper_api
+    networks:
+      - hoppernet
+
+networks:
+  hoppernet:
+    driver: bridge
+
+volumes:
+  mssql_data:

@@ -12,6 +12,7 @@ public class DraftStatus
 
 public class UpcomingPick
 {
+    public long DraftPickId { get; set; }
     public int PickOrder { get; set; }
     public string FirebaseUserId { get; set; } = "";
     public string? DisplayName { get; set; }

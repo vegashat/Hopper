@@ -3,6 +3,9 @@
   color: white;
   padding: 0 1rem;
 
+  display: flex;
+  align-items: center;
+
   .menu-btn {
     margin-right: 0.5rem;
   }
@@ -10,14 +13,20 @@
   .title {
     font-weight: 700;
     font-size: 1.2rem;
-    margin-right: 1rem;
+    margin-left: 0.25rem;
+  }
+
+  .spacer {
+    flex: 1 1 auto;
   }
 
   .draft-status {
     display: flex;
-    gap: 1rem;
+    justify-content: center;
+    gap: 2rem;
     align-items: center;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 500;
 
     .status-item {
       display: flex;
@@ -29,21 +38,23 @@
       }
 
       &.current {
-        color: #a5d6a7; // soft green
+        color: #4caf50; // green
       }
 
       &.next {
-        color: #90caf9; // soft blue
+        color: #42a5f5; // blue
+      }
+
+      &.last {
+        color: #ff9800; // orange
       }
     }
   }
 
-  .spacer {
-    flex: 1 1 auto;
-  }
-
   .login-btn {
     font-weight: 600;
+    background-color: #ff5722 !important; // bright orange
+    color: #fff !important;
     mat-icon {
       font-size: 18px;
       margin-right: 4px;
@@ -59,7 +70,7 @@
 
     mat-icon {
       font-size: 18px;
-      color: #ffeb3b; // gold for emphasis
+      color: #ffeb3b; // gold
     }
   }
 

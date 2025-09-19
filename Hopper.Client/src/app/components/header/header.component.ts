@@ -56,7 +56,8 @@ export class HeaderComponent implements OnInit {
 
   get lastPick(): string {
 
-    const lastPick = this.status?.history?.[0];
+    const lastPick = this.status?.history.filter((h: { claimedUtc: string; }) => h.claimedUtc !== "0001-01-01T00:00:00")
+                    .sort((a, b) => new Date(b.claimedUtc).getTime() - new Date(a.claimedUtc).getTime())[0];
     const name = this.status?.users.find(u => u.firebaseUserId == lastPick?.firebaseUserId)?.displayName ?? 'N/A';
     return name;
     // return `${name} picked ${lastPick?.quantity} tix to ${lastPick?.team.name}`;

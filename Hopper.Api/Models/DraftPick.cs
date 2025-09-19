@@ -8,6 +8,8 @@ public class DraftPick
     public int GameId { get; set; }
     public string FirebaseUserId { get; set; } 
     public string DisplayName { get; set; }
+    public string PickedById { get; set; } 
+    public string PickedByDisplayName { get; set; }
     public Team Team { get; set; }
     public int Quantity { get; set; }
     public DateTime CreatedUtc { get; set; }

@@ -1,20 +1,23 @@
-<div class="filter-container">
-    <h2 mat-dialog-title>Filter Games</h2>
-    <mat-dialog-content>
-        <h3>Months</h3>
-        <mat-button-toggle-group multiple [(ngModel)]="selectedMonths" hideMultipleSelectionIndicator="true">
-            <mat-button-toggle *ngFor="let m of months" [value]="m">{{ m }}</mat-button-toggle>
-        </mat-button-toggle-group>
+<h2 mat-dialog-title>Filter Games</h2>
 
-        <h3>Days of the Week</h3>
-        <mat-button-toggle-group multiple [(ngModel)]="selectedDays" hideMultipleSelectionIndicator="true">
-            <mat-button-toggle *ngFor="let d of days" [value]="d">{{ d }}</mat-button-toggle>
-        </mat-button-toggle-group>
-    </mat-dialog-content>
+<mat-dialog-content>
+  <h3>Months</h3>
+  <mat-button-toggle-group multiple [(ngModel)]="selectedMonths" hideMultipleSelectionIndicator="true">
+    <mat-button-toggle *ngFor="let m of months" [value]="m.num">
+      {{ m.label }}
+    </mat-button-toggle>
+  </mat-button-toggle-group>
 
-    <mat-dialog-actions align="end">
-        <button mat-button (click)="clearFilters()">Clear</button>
-        <button mat-button mat-dialog-close>Cancel</button>
-        <button mat-raised-button color="primary" (click)="apply()">Apply</button>
-    </mat-dialog-actions>
-</div>
+  <h3>Days of Week</h3>
+  <mat-button-toggle-group multiple [(ngModel)]="selectedDays" hideMultipleSelectionIndicator="true">
+    <mat-button-toggle *ngFor="let d of daysOfWeek" [value]="d.num">
+      {{ d.label }}
+    </mat-button-toggle>
+  </mat-button-toggle-group>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="clear()">Clear</button>
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-raised-button type="button" color="primary" (click)="apply()">Apply</button>
+</mat-dialog-actions>

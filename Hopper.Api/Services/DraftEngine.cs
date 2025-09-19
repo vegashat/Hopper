@@ -99,6 +99,7 @@ public class DraftEngine
             var upcoming = await _drafts.GetUpcomingPicksAsync(draft.DraftId, 3);
             status.Upcoming = upcoming.Select(u => new UpcomingPick
             {
+                DraftPickId = u.DraftPickId,
                 PickOrder = u.PickOrder,
                 FirebaseUserId = u.FirebaseUserId,
                 DisplayName = participants.TryGetValue(u.FirebaseUserId, out var p) ? p.DisplayName : null

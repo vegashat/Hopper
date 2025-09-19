@@ -1,75 +1,69 @@
 import { Component, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { GameFilters } from '@models/game-filters.model';
 
 @Component({
   selector: 'app-filter-dialog',
   standalone: true,
+  templateUrl: './filter-dialog.component.html',
+  styleUrls: ['./filter-dialog.component.scss'],
   imports: [
     CommonModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatButtonModule,
     FormsModule,
-    MatButtonToggleModule
-  ],
-  templateUrl: './filter-dialog.component.html',
-  styleUrls: ['./filter-dialog.component.scss']
+    MatDialogModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+  ]
 })
 export class FilterDialogComponent {
-  months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
-  days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  months = [
+    { num: 10, label: 'Oct' },
+    { num: 11, label: 'Nov' },
+    { num: 12, label: 'Dec' },
+    { num: 1, label: 'Jan' },
+    { num: 2, label: 'Feb' },
+    { num: 3, label: 'Mar' },
+    { num: 4, label: 'Apr' },
+  ];
 
-  selectedDays: string[] = [];
-  selectedMonths: string[] = [];
+  daysOfWeek = [
+    { num: 0, label: 'Sun' },
+    { num: 1, label: 'Mon' },
+    { num: 2, label: 'Tue' },
+    { num: 3, label: 'Wed' },
+    { num: 4, label: 'Thu' },
+    { num: 5, label: 'Fri' },
+    { num: 6, label: 'Sat' },
+  ];
+
+  selectedMonths: number[] = [];
+  selectedDays: number[] = [];
 
   constructor(
-    public dialogRef: MatDialogRef<FilterDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
+    private dialogRef: MatDialogRef<FilterDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { filters: GameFilters | null }
   ) {
-    this.selectedMonths = (data?.months || []).map((m: number) =>
-      this.numToMonth(m)
-    );
-    this.selectedDays = (data?.daysOfWeek || []).map((d: number) =>
-      this.days[d]
-    );
+    if (data.filters) {
+      this.selectedMonths = [...(data.filters.months || [])];
+      this.selectedDays = [...(data.filters.daysOfWeek || [])];
+    }
   }
 
   apply() {
-    this.dialogRef.close({
-      months: this.selectedMonths.map(m => this.labelToMonth(m)),
-      daysOfWeek: this.selectedDays.map(d => this.days.indexOf(d)),
-    });
+    this.dialogRef.close({ months: this.selectedMonths, daysOfWeek: this.selectedDays });
   }
 
-  clearFilters() {
+  clear() {
     this.selectedMonths = [];
     this.selectedDays = [];
-    // immediately apply clear
     this.dialogRef.close({ months: [], daysOfWeek: [] });
   }
 
-  private labelToMonth(label: string): number {
-    const map: Record<string, number> = {
-      Jan: 1, Feb: 2, Mar: 3, Apr: 4,
-      May: 5, Jun: 6, Jul: 7, Aug: 8,
-      Sep: 9, Oct: 10, Nov: 11, Dec: 12,
-    };
-    return map[label];
-  }
-
-  private numToMonth(num: number): string {
-    const map: Record<number, string> = {
-      1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr',
-      5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug',
-      9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
-    };
-    return map[num];
+  cancel() {
+    this.dialogRef.close(null);
   }
 }

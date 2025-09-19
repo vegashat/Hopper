@@ -7,8 +7,11 @@
   <!-- Title -->
   <span class="title">Hopper Draft</span>
 
-  <!-- Draft Status -->
-  <div class="draft-status" *ngIf="currentPick || nextPick">
+  <!-- Spacer before draft status -->
+  <span class="spacer"></span>
+
+  <!-- Draft Status (centered) -->
+  <div class="draft-status" *ngIf="currentPick || nextPick || lastPick">
     <span *ngIf="currentPick" class="status-item current">
       <mat-icon>person</mat-icon>
       Now: <strong>{{ currentPick }}</strong>
@@ -17,18 +20,18 @@
       <mat-icon>schedule</mat-icon>
       Next: <strong>{{ nextPick }}</strong>
     </span>
-    <span *ngIf="lastPick" class="status-item next">
-      <mat-icon>schedule</mat-icon>
+    <span *ngIf="lastPick" class="status-item last">
+      <mat-icon>history</mat-icon>
       Last: <strong>{{ lastPick }}</strong>
     </span>
   </div>
 
-  <!-- Spacer pushes right-side content -->
+  <!-- Spacer after draft status -->
   <span class="spacer"></span>
 
   <!-- Auth -->
   <ng-container *ngIf="!(authService.currentUser$ | async); else loggedIn">
-    <button mat-stroked-button color="accent" class="login-btn" (click)="openLogin()">
+    <button mat-raised-button color="warn" class="login-btn" (click)="openLogin()">
       <mat-icon>login</mat-icon> Login
     </button>
   </ng-container>

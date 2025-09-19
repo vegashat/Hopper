@@ -19,7 +19,7 @@ builder.Services.AddSignalR();
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("client", p => p
-        .WithOrigins("http://localhost:4200")
+        .WithOrigins(["http://localhost:4200", "http://localhost:4278"])
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
@@ -27,11 +27,11 @@ builder.Services.AddCors(opt =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
+// if (app.Environment.IsDevelopment())
+// {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+// }
 
 app.MapHub<Hopper.Api.RealTime.DraftHub>("/draftHub");
 app.MapControllers();

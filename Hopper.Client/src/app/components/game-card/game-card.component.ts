@@ -88,6 +88,7 @@ export class GameCardComponent implements OnInit {
     if (!this.game) return;
 
     let selections: Selection[] = [{
+      draftPickId: this.draftStatus?.upcoming[0].draftPickId ?? 0,
       firebaseUserId: this.draftStatus?.upcoming[0].firebaseUserId ?? '',
       gameId: this.game.gameId,
       displayName: this.draftStatus?.upcoming[0].displayName ?? '',
@@ -96,10 +97,12 @@ export class GameCardComponent implements OnInit {
     }];
 
     if(splitUserId){
+
       const splitSelection: Selection = {
+        draftPickId: this.draftStatus?.upcoming[0].draftPickId ?? 0,
         firebaseUserId: splitUserId,
         gameId: this.game.gameId,
-        displayName: this.draftStatus?.upcoming[0].displayName ?? '',
+        displayName: this.draftStatus?.users.find(u => u.firebaseUserId == splitUserId)?.displayName ?? selections[0].displayName,
         quantity,
         pickedUtc: new Date().toISOString(),
       };
@@ -108,16 +111,17 @@ export class GameCardComponent implements OnInit {
 
     this.selectionsService.makeSelection(this.seasonId, selections).subscribe({
       next: () => {
-        // ✅ Update local game object
-        this.game.remainingTickets -= quantity;
+        let fullQuantity = 0;
         selections.forEach(sel => {
+          fullQuantity += sel.quantity;
           this.game.selections = [...(this.game.selections || []), sel];
         });
+        this.game.remainingTickets -= fullQuantity;
 
         this.gamesService.updateGame(this.game);
         this.draftService.loadStatus(this.seasonId);
 
-        this.toastService.success(`Picked ${quantity} tickets for ${this.game.opponent.name} by ${selections[0].displayName}`);
+        // this.toastService.success(`Picked ${fullQuantity} tickets for ${this.game.opponent.name} by ${selections[0].displayName}`);
       },
       error: () => {
         this.toastService.error('Failed to make pick');

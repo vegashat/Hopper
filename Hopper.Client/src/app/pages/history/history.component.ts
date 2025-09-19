@@ -21,7 +21,7 @@ export class HistoryComponent implements OnInit {
 
   ngOnInit(): void {
     const seasonId = 1;
-    this.historyService.getHistory(seasonId).subscribe({
+    this.historyService.history$.subscribe({
       next: data => {
         this.picks = data;
         this.loading = false;

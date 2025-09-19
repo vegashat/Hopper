@@ -8,6 +8,7 @@ namespace Hopper.Api.Models
     public class Selection
     {
         public long SelectionId { get; set; }
+        public long DraftPickId { get; set; }
         public string FirebaseUserId { get; set; }
         public string DisplayName { get; set; }
         public int GameId { get; set; }

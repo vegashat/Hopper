@@ -33,6 +33,7 @@ public class SelectionsController : ControllerBase
             if (request.Length > 1)
             {
                 await _repo.CreateAsync(request[1]);
+                created.Quantity += request[1].Quantity;
             }
 
             // Advance draft queue

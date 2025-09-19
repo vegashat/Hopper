@@ -43,8 +43,8 @@ public class SelectionRepository : ISelectionRepository
 
         // Insert selection
         var sql = @"
-        INSERT INTO Selection (FirebaseUserId, GameId, Quantity, PickedUtc)
-        VALUES (@FirebaseUserId, @GameId, @Quantity, @PickedUtc);
+        INSERT INTO Selection (FirebaseUserId, GameId, Quantity, PickedUtc, DraftPickId)
+        VALUES (@FirebaseUserId, @GameId, @Quantity, @PickedUtc, @DraftPickId);
         SELECT CAST(SCOPE_IDENTITY() as bigint);";
 
         var id = await conn.ExecuteScalarAsync<long>(sql, selection, tx);
