@@ -8,7 +8,7 @@ RUN npm install
 
 # Copy the rest of the client source and build
 COPY . .
-RUN npm run build -- --configuration production
+RUN npm run build -- --configuration production --base-href /hopper/
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
