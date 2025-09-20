@@ -1,18 +1,20 @@
 // src/app/services/signalr.service.ts
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { environment } from 'environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SignalRService {
+  private apiUrl = `${environment.apiUrl}`.replace('/api','');
   private hubConnection!: signalR.HubConnection;
 
   connect(seasonId: number) {
     if (this.hubConnection) return;
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`http://localhost:5154/drafthub?seasonId=${seasonId}`)
+      .withUrl(`${this.apiUrl}/drafthub?seasonId=${seasonId}`)
       .withAutomaticReconnect()
       .build();
 

@@ -41,6 +41,8 @@
       <mat-icon>verified_user</mat-icon>
       {{ authService.currentUser?.displayName }}
     </span>
-    <button mat-button class="logout-btn" (click)="logout()">Logout</button>
+
+    <!-- Logout only for admins -->
+    <button *ngIf="authService.currentUser?.isAdmin" mat-button class="logout-btn" (click)="logout()">Logout</button>
   </ng-template>
 </mat-toolbar>
