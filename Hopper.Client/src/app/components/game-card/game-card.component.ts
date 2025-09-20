@@ -133,7 +133,7 @@ export class GameCardComponent implements OnInit {
     // Filter participants with tickets remaining > 0
 
     const dialogRef = this.dialog.open(SplitPickDialogComponent, {
-      width: '40vw',
+      width: '95vw',
       data: {game: game, participant: this.participant },
     });
 

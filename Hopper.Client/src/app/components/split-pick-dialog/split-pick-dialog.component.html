@@ -1,13 +1,13 @@
 <h2 mat-dialog-title>
-  <img [src]="'assets/' + data.game.opponent.logoUrl" alt="{{ data.game.opponent.name }}" class="team-logo" />
+  <img [src]="'assets/' + data.game.opponent.logoUrl" 
+       alt="{{ data.game.opponent.name }}" 
+       class="team-logo" />
   <span>{{ data.game.opponent.name }}</span>
 </h2>
 
 <mat-dialog-content>
   <div class="game-info">
-    <div class="game-date">
-      {{ data.game.gameDateTime | date:'fullDate' }} at {{ data.game.arena }}
-    </div>
+    {{ data.game.gameDateTime | date:'fullDate' }} at {{ data.game.arena }}
   </div>
 
   <mat-form-field appearance="outline" class="user-select">
@@ -20,8 +20,8 @@
   </mat-form-field>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-stroked-button mat-dialog-close (click)="dialogRef.close()">Cancel</button>
+<mat-dialog-actions>
+  <button mat-stroked-button (click)="cancel()">Cancel</button>
   <button mat-flat-button color="primary" [disabled]="!selectedUserId" (click)="confirm()">
     Confirm
   </button>
