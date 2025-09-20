@@ -30,7 +30,8 @@
   </mat-sidenav>
 
   <mat-sidenav-content>
-    <div class="shell-layout">
+    <!-- Apply pulse only here -->
+    <div class="shell-layout" [class.pulse-background]="isUserTurn">
       <!-- Header sticks at top -->
       <app-header (menuToggle)="sidenav.toggle()"></app-header>
 
@@ -39,6 +40,7 @@
         <router-outlet></router-outlet>
       </div>
 
+      <!-- Footer toolbar -->
       <mat-toolbar color="accent" class="shell-footer games-toolbar">
         <!-- Left: Quick links -->
         <div class="toolbar-left">
@@ -52,22 +54,29 @@
         <div class="toolbar-center" [class.compact]="isCompact">
           <div class="search-box">
             <mat-icon>search</mat-icon>
-            <input type="text" placeholder="Search games" [(ngModel)]="searchTerm"
+            <input
+              type="text"
+              placeholder="Search games"
+              [(ngModel)]="searchTerm"
               (ngModelChange)="onSearchChange($event)" />
 
-            <!-- Filter stays inside box when cramped -->
-            <button mat-icon-button (click)="openFilterDialog()" matTooltip="Filter" [matBadge]="filterCount()"
-              matBadgeColor="warn" [matBadgeHidden]="filterCount() === 0">
+            <!-- Filter -->
+            <button
+              mat-icon-button
+              (click)="openFilterDialog()"
+              matTooltip="Filter"
+              [matBadge]="filterCount()"
+              matBadgeColor="warn"
+              [matBadgeHidden]="filterCount() === 0">
               <mat-icon>filter_list</mat-icon>
             </button>
 
-            <!-- Clear button only if typing -->
+            <!-- Clear button -->
             <button *ngIf="searchTerm" mat-icon-button class="clear-btn" (click)="searchTerm=''; onSearchChange('')">
               <mat-icon>close</mat-icon>
             </button>
           </div>
         </div>
-
       </mat-toolbar>
     </div>
   </mat-sidenav-content>

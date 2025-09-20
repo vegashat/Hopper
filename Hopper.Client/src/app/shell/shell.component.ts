@@ -1,4 +1,4 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, RouterOutlet } from '@angular/router';
@@ -15,11 +15,18 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 // Your own components
 import { HeaderComponent } from '../components/header/header.component';
+import { FilterDialogComponent } from '@components/filter-dialog/filter-dialog.component';
 
 // Services & models
 import { FilterService } from '@services/filter.service';
 import { GameFilters } from '@models/game-filters.model';
-import { FilterDialogComponent } from '@components/filter-dialog/filter-dialog.component';
+import { AuthService } from '@services/auth.service';
+import { SignalRService } from '@services/signalr.service';
+import { ToastService } from '@services/toast.service';
+import { Participant } from '@models/participant.model';
+
+import { Subscription } from 'rxjs';
+import { DraftStatus } from '@models/draft.model';
 
 @Component({
   selector: 'app-shell',
@@ -44,9 +51,12 @@ import { FilterDialogComponent } from '@components/filter-dialog/filter-dialog.c
     HeaderComponent,
   ]
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit, OnDestroy {
   private filterSvc = inject(FilterService);
   private dialog = inject(MatDialog);
+  private auth = inject(AuthService);
+  private signalR = inject(SignalRService);
+  private toast = inject(ToastService);
 
   searchTerm = '';
   searchOpen = false;
@@ -54,11 +64,37 @@ export class ShellComponent {
   filters: GameFilters | null = null;
   isCompact = false;
 
+  isUserTurn = false;
+  currentUser: Participant | null = null;
+  private subs: Subscription[] = [];
+
   constructor() {
     this.updateCompactMode();
   }
 
+  ngOnInit() {
+    // Track logged-in user
+    this.subs.push(
+      this.auth.currentUser$.subscribe(u => this.currentUser = u)
+    );
 
+    // Listen for draft events
+    this.signalR.on<any>('StatusChanged', (status: DraftStatus) => {
+      if (this.currentUser?.firebaseUserId === status.upcoming[0].firebaseUserId) {
+        this.fireUserTurnAlert(status.upcoming[0].displayName);
+      }
+    });
+  }
+
+  private fireUserTurnAlert(name: string) {
+    this.isUserTurn = true;
+    this.toast.show(`${name}, it is your pick!`);
+    setTimeout(() => (this.isUserTurn = false), 8000);
+  }
+
+  ngOnDestroy() {
+    this.subs.forEach(s => s.unsubscribe());
+  }
 
   toggleSearch() {
     this.searchOpen = !this.searchOpen;

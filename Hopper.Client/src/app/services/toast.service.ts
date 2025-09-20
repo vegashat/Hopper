@@ -5,6 +5,14 @@ import { ToastrService } from 'ngx-toastr';
 export class ToastService {
   constructor(private toastr: ToastrService) {}
 
+  show(message: string, title: string = 'Notice') {
+    this.toastr.info(message, title, {
+      timeOut: 5000,
+      progressBar: true,
+      closeButton: true,
+    });
+  }
+
   success(message: string, title?: string) {
     this.toastr.success(message, title);
   }
