@@ -1,6 +1,6 @@
 <mat-sidenav-container class="shell-container">
   <mat-sidenav #sidenav mode="over" class="sidenav">
-    <mat-toolbar>Hopper Draft</mat-toolbar>
+    <mat-toolbar>Hopper</mat-toolbar>
     <mat-nav-list>
       <a mat-list-item routerLink="/games" routerLinkActive="active-link" (click)="sidenav.close()">
         <mat-icon>sports_basketball</mat-icon>
@@ -68,12 +68,6 @@
           </div>
         </div>
 
-        <!-- Right: Toggle -->
-        <div class="toolbar-right">
-          <button mat-raised-button color="primary" (click)="toggleAvailable()">
-            {{ showAvailableOnly ? 'Show All' : 'Show Available' }}
-          </button>
-        </div>
       </mat-toolbar>
     </div>
   </mat-sidenav-content>

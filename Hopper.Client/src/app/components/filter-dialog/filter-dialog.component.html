@@ -1,23 +1,32 @@
 <h2 mat-dialog-title>Filter Games</h2>
 
-<mat-dialog-content>
+<mat-dialog-content class="filter-container">
+  <h3>Search</h3>
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Search games</mat-label>
+    <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange($event)" />
+    <button *ngIf="searchTerm" mat-icon-button matSuffix (click)="clear()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <h3>Available</h3>
+  <button mat-stroked-button color="primary" (click)="toggleAvailable()">
+    {{ showAvailableOnly ? '✓ Show Available Only' : 'Show All' }}
+  </button>
+
   <h3>Months</h3>
-  <mat-button-toggle-group multiple [(ngModel)]="selectedMonths" hideMultipleSelectionIndicator="true">
-    <mat-button-toggle *ngFor="let m of months" [value]="m.num">
-      {{ m.label }}
-    </mat-button-toggle>
+  <mat-button-toggle-group multiple [(ngModel)]="selectedMonths" (ngModelChange)="updateMonths($event)" hideMultipleSelectionIndicator="true">
+    <mat-button-toggle *ngFor="let m of months" [value]="m.num">{{ m.label }}</mat-button-toggle>
   </mat-button-toggle-group>
 
   <h3>Days of Week</h3>
-  <mat-button-toggle-group multiple [(ngModel)]="selectedDays" hideMultipleSelectionIndicator="true">
-    <mat-button-toggle *ngFor="let d of daysOfWeek" [value]="d.num">
-      {{ d.label }}
-    </mat-button-toggle>
+  <mat-button-toggle-group multiple [(ngModel)]="selectedDays" (ngModelChange)="updateDays($event)" hideMultipleSelectionIndicator="true">
+    <mat-button-toggle *ngFor="let d of daysOfWeek" [value]="d.num">{{ d.label }}</mat-button-toggle>
   </mat-button-toggle-group>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
   <button mat-button type="button" (click)="clear()">Clear</button>
-  <button mat-button type="button" (click)="cancel()">Cancel</button>
-  <button mat-raised-button type="button" color="primary" (click)="apply()">Apply</button>
+  <button mat-button type="button" mat-dialog-close>Close</button>
 </mat-dialog-actions>

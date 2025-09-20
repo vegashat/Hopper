@@ -23,6 +23,11 @@ export class FilterService {
     this._filterState.next({ ...state, searchTerm: term });
   }
 
+  setAvailableOnly(value: boolean) {
+    const state = this._filterState.value;
+    this._filterState.next({ ...state, showAvailableOnly: value });
+  }
+
   toggleAvailable() {
     const state = this._filterState.value;
     this._filterState.next({
@@ -34,5 +39,9 @@ export class FilterService {
   setFilters(filters: GameFilters | null) {
     const state = this._filterState.value;
     this._filterState.next({ ...state, filters });
+  }
+
+  get currentState(): GameFilterState {
+    return this._filterState.value;
   }
 }

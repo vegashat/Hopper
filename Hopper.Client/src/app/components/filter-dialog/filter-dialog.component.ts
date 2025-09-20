@@ -1,10 +1,14 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { GameFilters } from '@models/game-filters.model';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+
+import { FilterService } from '@services/filter.service';
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: 'app-filter-dialog',
@@ -17,9 +21,12 @@ import { GameFilters } from '@models/game-filters.model';
     MatDialogModule,
     MatButtonModule,
     MatButtonToggleModule,
-  ]
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule
+]
 })
-export class FilterDialogComponent {
+export class FilterDialogComponent implements OnInit {
   months = [
     { num: 10, label: 'Oct' },
     { num: 11, label: 'Nov' },
@@ -40,30 +47,47 @@ export class FilterDialogComponent {
     { num: 6, label: 'Sat' },
   ];
 
+  searchTerm = '';
   selectedMonths: number[] = [];
   selectedDays: number[] = [];
+  showAvailableOnly = false;
 
   constructor(
-    private dialogRef: MatDialogRef<FilterDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { filters: GameFilters | null }
-  ) {
-    if (data.filters) {
-      this.selectedMonths = [...(data.filters.months || [])];
-      this.selectedDays = [...(data.filters.daysOfWeek || [])];
-    }
+    private filterSvc: FilterService,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) {}
+
+  ngOnInit(): void {
+    this.filterSvc.filterState$.subscribe(state => {
+      this.searchTerm = state.searchTerm;
+      this.selectedMonths = state.filters?.months ?? [];
+      this.selectedDays = state.filters?.daysOfWeek ?? [];
+      this.showAvailableOnly = state.showAvailableOnly;
+    });
   }
 
-  apply() {
-    this.dialogRef.close({ months: this.selectedMonths, daysOfWeek: this.selectedDays });
+  onSearchChange(term: string) {
+    this.filterSvc.setSearchTerm(term);
+  }
+
+  toggleAvailable() {
+    this.filterSvc.toggleAvailable();
+  }
+
+  updateMonths(months: number[]) {
+    this.filterSvc.setFilters({ months, daysOfWeek: this.selectedDays });
+  }
+
+  updateDays(days: number[]) {
+    this.filterSvc.setFilters({ months: this.selectedMonths, daysOfWeek: days });
   }
 
   clear() {
+    this.searchTerm = '';
     this.selectedMonths = [];
     this.selectedDays = [];
-    this.dialogRef.close({ months: [], daysOfWeek: [] });
-  }
-
-  cancel() {
-    this.dialogRef.close(null);
+    this.showAvailableOnly = false;
+    this.filterSvc.setSearchTerm('');
+    this.filterSvc.setFilters({ months: [], daysOfWeek: [] });
   }
 }

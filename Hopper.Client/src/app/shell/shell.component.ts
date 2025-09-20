@@ -73,21 +73,12 @@ export class ShellComponent {
     this.filterSvc.setSearchTerm(term);
   }
 
-  toggleAvailable(): void {
-    this.showAvailableOnly = !this.showAvailableOnly;
-    this.filterSvc.toggleAvailable();
-  }
-
   openFilterDialog(): void {
-    const dialogRef = this.dialog.open(FilterDialogComponent, {
+    this.dialog.open(FilterDialogComponent, {
       width: '400px',
-      data: { filters: this.filters }
-    });
-
-    dialogRef.afterClosed().subscribe((result: GameFilters | null) => {
-      if (result) {
-        this.filters = result;
-        this.filterSvc.setFilters(result);
+      data: {
+        filters: this.filters,
+        showAvailableOnly: false
       }
     });
   }

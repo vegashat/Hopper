@@ -10,6 +10,8 @@ import { DraftStatus } from '@models/draft.model';
 import { LoginDialogComponent } from '@components/login-dialog/login-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '@services/auth.service';
+import { FilterService } from '@services/filter.service';
+import { FilterDialogComponent } from '@components/filter-dialog/filter-dialog.component';
 
 @Component({
   selector: 'app-header',
@@ -23,9 +25,11 @@ export class HeaderComponent implements OnInit {
   @Output() menuToggle = new EventEmitter<void>();
   dialog = inject(MatDialog)
   authService = inject(AuthService);
-
   seasonId = 1;
   status: DraftStatus | null = null;
+  private filterSvc = inject(FilterService);
+
+
 
   constructor(private draftService: DraftService) { }
 
@@ -69,5 +73,19 @@ export class HeaderComponent implements OnInit {
 
   logout() : void {
     this.authService.logout();
+  }
+
+  openFilterDialog(): void {
+    const currentState = this.filterSvc.currentState; // grab snapshot
+    const dialogRef = this.dialog.open(FilterDialogComponent, {
+      width: '400px',
+      data: { filters: currentState.filters }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.filterSvc.setFilters(result);
+      }
+    });
   }
 }
