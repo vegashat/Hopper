@@ -30,7 +30,7 @@ export class GamesService {
         this.updateGame(updated);
 
         if (updated.remainingTickets === 0) {
-          this.toastService.warning(`🚨 ${updated.opponent.name} on ${updated.gameDateTime} is now SOLD OUT!`);
+          this.toastService.warning(`🚨 ${updated.opponent.name} on ${new Date(updated.gameDateTime).toLocaleDateString()} is now SOLD OUT!`);
         }
       }
     });

@@ -5,7 +5,7 @@ namespace Hopper.Api.Repositories;
 
 public interface ISelectionRepository
 {
-    Task<Selection> CreateAsync(Selection selection);
+    Selection CreateAsync(Selection selection);
     Task<IEnumerable<Selection>> GetByUserAsync(string firebaseUserId);
     Task<Selection> GetByGameAsync(int gameId);
     Task DeleteAsync(int selectionId);
@@ -17,7 +17,7 @@ public class SelectionRepository : ISelectionRepository
     private readonly Db _db;
     public SelectionRepository(Db db) => _db = db;
 
-    public async Task<Selection> CreateAsync(Selection selection)
+    public Selection CreateAsync(Selection selection)
     {
         if (selection.Quantity != 2 && selection.Quantity != 4)
             throw new ArgumentException("Quantity must be 2 or 4.");
@@ -28,12 +28,27 @@ public class SelectionRepository : ISelectionRepository
         using var tx = conn.BeginTransaction();
 
         // Try to decrement tickets directly (atomic check)
-        var rows = await conn.ExecuteAsync(@"
-        UPDATE Game
-        SET RemainingTickets = RemainingTickets - @Quantity
-        WHERE GameId = @GameId
-          AND RemainingTickets >= @Quantity;
-    ", new { selection.GameId, selection.Quantity }, tx);
+        var rows = conn.Execute(@"
+                    UPDATE Game
+                    SET RemainingTickets = RemainingTickets - @Quantity
+                    WHERE GameId = @GameId
+                    AND RemainingTickets >= @Quantity;
+                ", new { selection.GameId, selection.Quantity }, tx);
+
+        if (rows == 0)
+        {
+            tx.Rollback();
+            throw new InvalidOperationException("Not enough tickets remaining for this game.");
+        }
+
+        rows = conn.Execute(@"
+                   SELECT s.FirebaseUserId, SUM(s.Quantity) AS Picked, pa.TicketAllotment
+                   FROM Selection s
+                   INNER JOIN ParticipantAllotment pa on s.firebaseuserid = pa.firebaseUserId
+                   WHERE s.firebaseUserId = @firebaseUserId
+                   GROUP BY s.FirebaseUserId, pa.TicketAllotment
+                   HAVING pa.TicketAllotment > sum(s.Quantity)
+        ", new { selection.FirebaseUserId }, tx);
 
         if (rows == 0)
         {
@@ -47,7 +62,7 @@ public class SelectionRepository : ISelectionRepository
         VALUES (@FirebaseUserId, @GameId, @Quantity, @PickedUtc, @DraftPickId);
         SELECT CAST(SCOPE_IDENTITY() as bigint);";
 
-        var id = await conn.ExecuteScalarAsync<long>(sql, selection, tx);
+        var id = conn.ExecuteScalar<long>(sql, selection, tx);
         selection.SelectionId = id;
 
         tx.Commit();

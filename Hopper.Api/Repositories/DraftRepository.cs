@@ -50,6 +50,7 @@ public class DraftRepository : IDraftRepository
     {
         using var conn = _db.Open();
         await conn.ExecuteAsync(@"
+            DELETE FROM Selection WHERE DraftPickId IN (Select DraftPickId from Draft WHERE SeasonId = @seasonId);
             DELETE FROM DraftPick WHERE DraftId IN (SELECT DraftId FROM Draft WHERE SeasonId=@seasonId);
             DELETE FROM Draft WHERE SeasonId=@seasonId;
             UPDATE GAME set RemainingTickets = 4 where SeasonId = @seasonId;
@@ -81,12 +82,11 @@ public class DraftRepository : IDraftRepository
                 p.DisplayName,
                 pp.FirebaseUserId AS PickedById,
                 pp.DisplayName AS PickedByDisplayName,
+                (ISNULL(s.Quantity, 0)) AS Quantity,
                 t.TeamId,
                 t.Name,
                 t.City,
-                t.LogoUrl,
-                -- aggregate who claimed tickets
-                (ISNULL(s.Quantity, 0)) AS TotalQuantity
+                t.LogoUrl
             FROM DraftPick dp
                 INNER JOIN Selection s
                 ON dp.GameId = s.GameId and dp.DraftPickId = s.draftPickId

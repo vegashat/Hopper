@@ -11,9 +11,7 @@
   </mat-form-field>
 
   <h3>Available</h3>
-  <button mat-stroked-button color="primary" (click)="toggleAvailable()">
-    {{ showAvailableOnly ? '✓ Show Available Only' : 'Show All' }}
-  </button>
+  <mat-slide-toggle ngModel name="showAvailableOnly" [(ngModel)]="showAvailableOnly" (click)="toggleAvailable()">Only Available Games</mat-slide-toggle>
 
   <h3>Months</h3>
   <mat-button-toggle-group multiple [(ngModel)]="selectedMonths" (ngModelChange)="updateMonths($event)" hideMultipleSelectionIndicator="true">

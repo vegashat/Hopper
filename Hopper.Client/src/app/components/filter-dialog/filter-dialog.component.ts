@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 
 import { FilterService } from '@services/filter.service';
 import { MatIconModule } from "@angular/material/icon";
+import { MatSlideToggle } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'app-filter-dialog',
@@ -23,7 +24,8 @@ import { MatIconModule } from "@angular/material/icon";
     MatButtonToggleModule,
     MatFormFieldModule,
     MatInputModule,
-    MatIconModule
+    MatIconModule,
+    MatSlideToggle
 ]
 })
 export class FilterDialogComponent implements OnInit {
