@@ -1,4 +1,5 @@
-import { Component, Input, Inject, Output, EventEmitter, Optional, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, Input, Inject, Output, EventEmitter, Optional, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +18,7 @@ import { Participant } from '@models/participant.model';
 import { SplitPickDialogComponent } from '@components/split-pick-dialog/split-pick-dialog.component';
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule} from '@angular/material/menu';
+import { SeasonService } from '@services/season.service';
 
 @Component({
   selector: 'app-game-card',
@@ -30,8 +32,8 @@ export class GameCardComponent implements OnInit {
   @Output() gameUpdated = new EventEmitter<Game>();
   private draftService = inject(DraftService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
-  private seasonId = 1;
   participant: Participant | undefined;
   private draftStatus: DraftStatus | undefined;
 
@@ -40,6 +42,7 @@ export class GameCardComponent implements OnInit {
     private toastService: ToastService,
     private gamesService: GamesService,
     private authService: AuthService,
+    private seasonService: SeasonService,
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: { game: Game }
   ) {
     if (data?.game) {
@@ -53,7 +56,7 @@ export class GameCardComponent implements OnInit {
     const draftStatus$ = this.draftService.draftStatus$;
     combineLatest([
       user$, draftStatus$
-    ]).pipe()
+    ]).pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(([user, status]) => {
         if (status) {
           this.draftStatus = status;
@@ -113,7 +116,7 @@ export class GameCardComponent implements OnInit {
       selections = [...(selections), splitSelection];
     }
 
-    this.selectionsService.makeSelection(this.seasonId, selections).subscribe({
+    this.selectionsService.makeSelection(this.seasonService.currentSeasonId, selections).subscribe({
       next: () => {
         let fullQuantity = 0;
         selections.forEach(sel => {
@@ -123,7 +126,7 @@ export class GameCardComponent implements OnInit {
         this.game.remainingTickets -= fullQuantity;
 
         this.gamesService.updateGame(this.game);
-        this.draftService.loadStatus(this.seasonId);
+        this.draftService.loadStatus(this.seasonService.currentSeasonId);
 
         // this.toastService.success(`Picked ${fullQuantity} tickets for ${this.game.opponent.name} by ${selections[0].displayName}`);
       },
@@ -141,7 +144,7 @@ export class GameCardComponent implements OnInit {
       data: {game: game, participant: this.participant },
     });
 
-    dialogRef.afterClosed().subscribe((result:any) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result?: { splitUserId: string }) => {
       if (result) {
         this.pick(2, result.splitUserId); // call pick with split target
       }

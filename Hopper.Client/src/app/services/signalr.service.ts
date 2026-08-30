@@ -8,29 +8,41 @@ import { environment } from 'environments/environment';
 })
 export class SignalRService {
   private apiUrl = `${environment.apiUrl}`.replace('/api','');
-  private hubConnection!: signalR.HubConnection;
+  private hubConnection?: signalR.HubConnection;
+  private seasonId?: number;
+  private readonly handlers = new Map<string, Array<(data: unknown) => void>>();
 
-  connect(seasonId: number) {
+  connect(seasonId: number): void {
     if (this.hubConnection) return;
+    this.seasonId = seasonId;
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${this.apiUrl}/drafthub?seasonId=${seasonId}`)
+      .withUrl(`${this.apiUrl}/draftHub`)
       .withAutomaticReconnect()
       .build();
 
+    for (const [event, handlers] of this.handlers) {
+      handlers.forEach(handler => this.hubConnection?.on(event, handler));
+    }
+
+    this.hubConnection.onreconnected(() => this.joinSeason());
+
     this.hubConnection
       .start()
-      .then(() => {
-        console.log('SignalR connected (DraftService)');
-        // 👇 Tell server we want to join the season group
-        this.hubConnection.invoke('JoinSeason', seasonId.toString())
-          .then(() => console.log(`Joined season group ${seasonId}`))
-          .catch(err => console.error('Error joining season group:', err));
-      })
-      .catch(err => console.error('SignalR error (DraftService):', err));
+      .then(() => this.joinSeason())
+      .catch(error => console.error('Unable to connect to draft updates.', error));
   }
 
-  on<T>(event: string, handler: (data: T) => void) {
-    this.hubConnection.on(event, handler);
+  on<T>(event: string, handler: (data: T) => void): void {
+    const wrapped = handler as (data: unknown) => void;
+    const handlers = this.handlers.get(event) ?? [];
+    handlers.push(wrapped);
+    this.handlers.set(event, handlers);
+    this.hubConnection?.on(event, wrapped);
+  }
+
+  private joinSeason(): Promise<void> {
+    if (!this.hubConnection || this.seasonId === undefined) return Promise.resolve();
+    return this.hubConnection.invoke('JoinSeason', this.seasonId.toString());
   }
 }

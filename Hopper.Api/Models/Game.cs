@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Hopper.Api.Models;
+namespace Hopper.Api.Models;
 
-
-
-public class Game {
+public class Game
+{
     public int GameId { get; set; }
     public int SeasonId { get; set; }
     public DateTimeOffset GameDateTime { get; set; }

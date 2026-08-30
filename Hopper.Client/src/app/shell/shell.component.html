@@ -18,7 +18,7 @@
         <mat-icon>groups</mat-icon>
         <span class="link-label">Participants</span>
       </a>
-      <a mat-list-item routerLink="/admin" routerLinkActive="active-link" (click)="sidenav.close()">
+      <a *ngIf="currentUser?.isAdmin" mat-list-item routerLink="/admin" routerLinkActive="active-link" (click)="sidenav.close()">
         <mat-icon>admin_panel_settings</mat-icon>
         <span class="link-label">Admin</span>
       </a>

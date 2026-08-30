@@ -4,7 +4,8 @@ using Hopper.Api.Repositories;
 using Hopper.Api.Services;
 using Hopper.Api.RealTime;
 using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Hopper.Api.Controllers;
 
@@ -16,9 +17,6 @@ public class SelectionsController : ControllerBase
     private readonly IGameRepository _gameRepo;
     private readonly DraftEngine _draftEngine;
     private readonly IHubContext<DraftHub> _hub;
-    private static readonly ConcurrentDictionary<int, SemaphoreSlim> _seasonLocks = new();
-    private SemaphoreSlim GetSeasonLock(int seasonId) =>
-            _seasonLocks.GetOrAdd(seasonId, _ => new SemaphoreSlim(1, 1));
 
     public SelectionsController(ISelectionRepository repo, IGameRepository gameRepo, DraftEngine draftEngine, IHubContext<DraftHub> hub)
     {
@@ -29,32 +27,27 @@ public class SelectionsController : ControllerBase
     }
 
     [HttpPost("{seasonId}")]
-    public async Task<ActionResult<Selection>> Create(int seasonId, [FromBody] Selection[] request)
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<Selection>>> Create(int seasonId, [FromBody] Selection[] request)
     {
-        var seasonLock = GetSeasonLock(seasonId + (int)request.First().SelectionId);
-        await seasonLock.WaitAsync();
         try
         {
-            var created = _repo.CreateAsync(request[0]);
-            //See if this is a split request.
-            if (request.Length > 1)
-            {
-                _repo.CreateAsync(request[1]);
-                created.Quantity += request[1].Quantity;
-            }
+            if (request.Length == 0) return BadRequest("At least one selection is required.");
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!User.IsInRole("Admin") && currentUserId != request[0].FirebaseUserId)
+                return Forbid();
 
-            // Advance draft queue
-            await _draftEngine.AdvanceQueueAfterSelectionAsync(seasonId, request[0].FirebaseUserId, request[0].GameId);
+            var created = await _repo.CreateForNextPickAsync(seasonId, request);
 
-            // 🔑 Fetch updated game so clients know about remaining tickets
+            await _draftEngine.ReplenishQueueAfterSelectionAsync(seasonId);
+
             var updatedGame = await _gameRepo.GetByIdAsync(request[0].GameId);
             var upcoming = await _draftEngine.GetUpcomingAsync(seasonId, 3);
 
-            // Broadcast selection with updated game info
             await _hub.Clients.Group(DraftHub.SeasonGroup(seasonId.ToString()))
                 .SendAsync("SelectionMade", new
                 {
-                    Selection = created,
+                    Selections = created,
                     Game = updatedGame
                 });
 
@@ -62,22 +55,18 @@ public class SelectionsController : ControllerBase
                 .SendAsync("QueueUpdated", upcoming);
 
             return CreatedAtAction(nameof(GetByUser),
-                new { firebaseUserId = created.FirebaseUserId },
+                new { firebaseUserId = created[0].FirebaseUserId },
                 created);
         }
         catch (ArgumentException ex) { return BadRequest(ex.Message); }
         catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
-        finally
-        {
-            seasonLock.Release();
-        }
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        await _repo.DeleteAsync(id);
-        return Ok();
+        return await _repo.DeleteAsync(id) ? NoContent() : NotFound();
     }
 
     [HttpGet("user/{firebaseUserId}")]

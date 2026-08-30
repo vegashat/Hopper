@@ -1,5 +1,6 @@
 // split-pick-dialog.component.ts
-import { Component, inject, Inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, Inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogContent, MatDialogActions } from '@angular/material/dialog';
 import { Participant } from '@models/participant.model';
 import { MatInputModule } from "@angular/material/input";
@@ -23,6 +24,7 @@ export class SplitPickDialogComponent implements OnInit {
   game: Game | null = null;
   draftService = inject(DraftService)
   users : UserProgress[] = [];
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     public dialogRef: MatDialogRef<SplitPickDialogComponent>,
@@ -35,8 +37,7 @@ export class SplitPickDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const seasonId = 1;
-    this.draftService.draftStatus$.subscribe(status => {
+    this.draftService.draftStatus$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
       if(status && status.users){
         this.users = status.users.filter(p => p.remaining > 0 && p.firebaseUserId !== this.pickingUserId);
       }

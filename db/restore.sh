@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-SA_PASSWORD="${SA_PASSWORD:-${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}}"
+SA_PASSWORD="${SA_PASSWORD:-${MSSQL_SA_PASSWORD:-}}"
+: "${SA_PASSWORD:?Set SA_PASSWORD or MSSQL_SA_PASSWORD}"
 DB_NAME="${DB_NAME:-Hopper}"
 BAK_PATH="${BAK_PATH:-/var/opt/sqlserver/backup/Hopper.bak}"
 FORCE_RESTORE="${FORCE_RESTORE:-0}"
@@ -52,3 +53,6 @@ if [ "$DB_EXISTS" -eq 0 ] || [ "$FORCE_RESTORE" -eq 1 ]; then
 else
   echo "Database $DB_NAME already exists and FORCE_RESTORE=0; skipping restore."
 fi
+
+$SQLCMD -C -S localhost -U sa -P "$SA_PASSWORD" -d "$DB_NAME" -i /usr/local/bin/migrate.sql
+echo "Database migrations completed."

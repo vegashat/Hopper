@@ -82,7 +82,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.signalR.on<any>('StatusChanged', (status: DraftStatus) => {
       const nextPick = status?.upcoming?.[0];
       if (nextPick && this.currentUser?.firebaseUserId === nextPick.firebaseUserId) {
-        this.fireUserTurnAlert(nextPick.displayName);
+        this.fireUserTurnAlert(nextPick.displayName ?? 'It');
       }
     });
   }

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ShellComponent } from './shell.component';
+import { TEST_PROVIDERS } from '../testing/test-providers';
 
 describe('ShellComponent', () => {
   let component: ShellComponent;
@@ -8,7 +9,7 @@ describe('ShellComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ShellComponent]
+      imports: [ShellComponent], providers: TEST_PROVIDERS
     })
     .compileComponents();
 

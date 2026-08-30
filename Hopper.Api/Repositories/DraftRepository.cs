@@ -16,8 +16,6 @@ public interface IDraftRepository
     Task AddDraftPicksAsync(IEnumerable<DraftPick> picks);
     Task AddDraftPickAsync(DraftPick pick);
 
-    /// Marks the *earliest* unclaimed pick as claimed. Optionally enforce whose turn it is.
-    Task<bool> ClaimNextPickAsync(int draftId, string? expectedFirebaseUserId = null, int? gameId = null);
 }
 
 public class DraftRepository : IDraftRepository
@@ -28,14 +26,12 @@ public class DraftRepository : IDraftRepository
     public async Task<Draft> StartDraftAsync(int seasonId)
     {
         using var conn = _db.Open();
-        await conn.ExecuteAsync(
-            "UPDATE Draft SET IsActive = 0 WHERE SeasonId=@seasonId AND IsActive=1",
-            new { seasonId });
-
-        var id = await conn.ExecuteScalarAsync<int>(
-            @"INSERT INTO Draft (SeasonId, IsActive) VALUES (@seasonId,1);
-              SELECT CAST(SCOPE_IDENTITY() as int);",
-            new { seasonId });
+        using var tx = conn.BeginTransaction();
+        var id = await conn.ExecuteScalarAsync<int>(@"
+            UPDATE Draft SET IsActive = 0 WHERE SeasonId = @seasonId AND IsActive = 1;
+            INSERT INTO Draft (SeasonId, IsActive) VALUES (@seasonId, 1);
+            SELECT CAST(SCOPE_IDENTITY() AS int);", new { seasonId }, tx);
+        tx.Commit();
 
         return new Draft
         {
@@ -49,21 +45,27 @@ public class DraftRepository : IDraftRepository
     public async Task ResetDraftAsync(int seasonId)
     {
         using var conn = _db.Open();
+        using var tx = conn.BeginTransaction();
         await conn.ExecuteAsync(@"
-            DELETE FROM Selection WHERE DraftPickId IN (Select DraftPickId from Draft WHERE SeasonId = @seasonId);
+            DELETE FROM Selection WHERE DraftPickId IN (
+                SELECT dp.DraftPickId FROM DraftPick dp
+                INNER JOIN Draft d ON d.DraftId = dp.DraftId
+                WHERE d.SeasonId = @seasonId
+            );
             DELETE FROM DraftPick WHERE DraftId IN (SELECT DraftId FROM Draft WHERE SeasonId=@seasonId);
             DELETE FROM Draft WHERE SeasonId=@seasonId;
-            UPDATE GAME set RemainingTickets = 4 where SeasonId = @seasonId;
-            DELETE FROM Selection WHERE GameId in (Select GameId from Game Where SeasonId = @seasonId);",
-
-            new { seasonId });
+            DELETE FROM Selection WHERE GameId IN (SELECT GameId FROM Game WHERE SeasonId = @seasonId);
+            UPDATE Game SET RemainingTickets = 4 WHERE SeasonId = @seasonId;",
+            new { seasonId }, tx);
+        tx.Commit();
     }
 
     public async Task<Draft?> GetActiveDraftAsync(int seasonId)
     {
         using var conn = _db.Open();
         return await conn.QuerySingleOrDefaultAsync<Draft>(
-            "SELECT * FROM Draft WHERE SeasonId=@seasonId AND IsActive=1",
+            @"SELECT DraftId, SeasonId, CreatedUtc, IsActive
+              FROM Draft WHERE SeasonId = @seasonId AND IsActive = 1",
             new { seasonId });
     }
 
@@ -168,44 +170,4 @@ public class DraftRepository : IDraftRepository
             pick);
     }
 
-    public async Task<bool> ClaimNextPickAsync(int draftId, string? expectedFirebaseUserId = null, int? gameId = null)
-    {
-        using var conn = _db.Open();
-        using var tx = conn.BeginTransaction();
-
-        var next = await conn.QuerySingleOrDefaultAsync<DraftPick>(@"
-            SELECT TOP 1 *
-            FROM DraftPick
-            WHERE DraftId=@draftId AND ClaimedUtc IS NULL
-            ORDER BY PickOrder",
-            new { draftId }, tx);
-
-        if (next is null)
-        {
-            tx.Commit();
-            return false;
-        }
-
-        if (!string.IsNullOrEmpty(expectedFirebaseUserId) &&
-            !string.Equals(expectedFirebaseUserId, next.FirebaseUserId, StringComparison.Ordinal))
-        {
-            tx.Rollback();
-            return false;
-        }
-
-        var rows = await conn.ExecuteAsync(@"
-            UPDATE DraftPick
-            SET ClaimedUtc = SYSUTCDATETIME(), GameId = @gameId
-            WHERE DraftPickId=@id AND ClaimedUtc IS NULL",
-            new { id = next.DraftPickId, gameId = gameId }, tx);
-
-        if (rows == 0)
-        {
-            tx.Rollback();
-            return false;
-        }
-
-        tx.Commit();
-        return true;
-    }
 }

@@ -5,10 +5,10 @@ namespace Hopper.Api.Repositories;
 
 public interface ISelectionRepository
 {
-    Selection CreateAsync(Selection selection);
+    Task<IReadOnlyList<Selection>> CreateForNextPickAsync(int seasonId, IReadOnlyList<Selection> selections);
     Task<IEnumerable<Selection>> GetByUserAsync(string firebaseUserId);
-    Task<Selection> GetByGameAsync(int gameId);
-    Task DeleteAsync(int selectionId);
+    Task<IEnumerable<Selection>> GetByGameAsync(int gameId);
+    Task<bool> DeleteAsync(long selectionId);
     Task<IEnumerable<(string FirebaseUserId, int Tickets)>> GetPickedByUserAsync(int seasonId);
     Task<bool> AnyTicketsRemainingAsync(int seasonId);
 }
@@ -17,107 +17,156 @@ public class SelectionRepository : ISelectionRepository
     private readonly Db _db;
     public SelectionRepository(Db db) => _db = db;
 
-    public Selection CreateAsync(Selection selection)
+    public async Task<IReadOnlyList<Selection>> CreateForNextPickAsync(
+        int seasonId,
+        IReadOnlyList<Selection> selections)
     {
-        if (selection.Quantity != 2 && selection.Quantity != 4)
+        if (selections.Count is < 1 or > 2)
+            throw new ArgumentException("A pick must contain one or two selections.");
+        if (selections.Any(s => s.Quantity is not (2 or 4)))
             throw new ArgumentException("Quantity must be 2 or 4.");
 
-        selection.PickedUtc = DateTime.UtcNow;
+        var first = selections[0];
+        if (selections.Any(s => s.DraftPickId != first.DraftPickId || s.GameId != first.GameId))
+            throw new ArgumentException("Split selections must use the same draft pick and game.");
+        if (selections.Select(s => s.FirebaseUserId).Distinct(StringComparer.Ordinal).Count() != selections.Count)
+            throw new ArgumentException("A split pick must contain different participants.");
 
         using var conn = _db.Open();
         using var tx = conn.BeginTransaction();
 
-        // Try to decrement tickets directly (atomic check)
-        var rows = conn.Execute(@"
-                    UPDATE Game
-                    SET RemainingTickets = RemainingTickets - @Quantity
-                    WHERE GameId = @GameId
-                    AND RemainingTickets >= @Quantity;
-                ", new { selection.GameId, selection.Quantity }, tx);
+        try
+        {
+            var next = await conn.QuerySingleOrDefaultAsync<DraftPick>(@"
+                SELECT TOP (1) dp.DraftPickId, dp.DraftId, dp.FirebaseUserId, dp.PickOrder
+                FROM Draft d
+                INNER JOIN DraftPick dp WITH (UPDLOCK, HOLDLOCK) ON dp.DraftId = d.DraftId
+                WHERE d.SeasonId = @seasonId AND d.IsActive = 1 AND dp.ClaimedUtc IS NULL
+                ORDER BY dp.PickOrder;", new { seasonId }, tx);
 
-        if (rows == 0)
+            if (next is null)
+                throw new InvalidOperationException("No upcoming draft pick is available.");
+            if (next.DraftPickId != first.DraftPickId ||
+                !string.Equals(next.FirebaseUserId, first.FirebaseUserId, StringComparison.Ordinal))
+                throw new InvalidOperationException("This is not the participant's current draft pick.");
+
+            foreach (var selection in selections)
+            {
+                var remaining = await conn.ExecuteScalarAsync<int?>(@"
+                    SELECT pa.TicketAllotment - COALESCE((
+                        SELECT SUM(s.Quantity)
+                        FROM Selection s
+                        INNER JOIN Game selectedGame ON selectedGame.GameId = s.GameId
+                        WHERE s.FirebaseUserId = pa.FirebaseUserId
+                          AND selectedGame.SeasonId = pa.SeasonId
+                    ), 0)
+                    FROM ParticipantAllotment pa WITH (UPDLOCK, HOLDLOCK)
+                    WHERE pa.SeasonId = @seasonId AND pa.FirebaseUserId = @firebaseUserId;",
+                    new { seasonId, selection.FirebaseUserId }, tx);
+
+                if (remaining is null || remaining < selection.Quantity)
+                    throw new InvalidOperationException($"{selection.FirebaseUserId} does not have enough tickets remaining.");
+
+                selection.DisplayName = await conn.ExecuteScalarAsync<string?>(
+                    "SELECT DisplayName FROM Participant WHERE FirebaseUserId = @firebaseUserId",
+                    new { selection.FirebaseUserId }, tx);
+            }
+
+            var totalQuantity = selections.Sum(s => s.Quantity);
+            var updatedGames = await conn.ExecuteAsync(@"
+                UPDATE Game
+                SET RemainingTickets = RemainingTickets - @totalQuantity
+                WHERE GameId = @gameId AND SeasonId = @seasonId
+                  AND RemainingTickets >= @totalQuantity;",
+                new { totalQuantity, gameId = first.GameId, seasonId }, tx);
+
+            if (updatedGames != 1)
+                throw new InvalidOperationException("The game does not have enough tickets remaining.");
+
+            foreach (var selection in selections)
+            {
+                selection.PickedUtc = DateTime.UtcNow;
+                selection.SelectionId = await conn.ExecuteScalarAsync<long>(@"
+                    INSERT INTO Selection (FirebaseUserId, GameId, Quantity, PickedUtc, DraftPickId)
+                    VALUES (@FirebaseUserId, @GameId, @Quantity, @PickedUtc, @DraftPickId);
+                    SELECT CAST(SCOPE_IDENTITY() AS bigint);", selection, tx);
+            }
+
+            var claimed = await conn.ExecuteAsync(@"
+                UPDATE DraftPick
+                SET ClaimedUtc = SYSUTCDATETIME(), GameId = @gameId
+                WHERE DraftPickId = @draftPickId AND ClaimedUtc IS NULL;",
+                new { gameId = first.GameId, draftPickId = first.DraftPickId }, tx);
+
+            if (claimed != 1)
+                throw new InvalidOperationException("The draft pick was already claimed.");
+
+            tx.Commit();
+            return selections;
+        }
+        catch
         {
             tx.Rollback();
-            throw new InvalidOperationException("Not enough tickets remaining for this game.");
+            throw;
         }
-
-        rows = conn.Execute(@"
-                   SELECT s.FirebaseUserId, SUM(s.Quantity) AS Picked, pa.TicketAllotment
-                   FROM Selection s
-                   INNER JOIN ParticipantAllotment pa on s.firebaseuserid = pa.firebaseUserId
-                   WHERE s.firebaseUserId = @firebaseUserId
-                   GROUP BY s.FirebaseUserId, pa.TicketAllotment
-                   HAVING pa.TicketAllotment > sum(s.Quantity)
-        ", new { selection.FirebaseUserId }, tx);
-
-        if (rows == 0)
-        {
-            tx.Rollback();
-            throw new InvalidOperationException("Not enough tickets remaining for this game.");
-        }
-
-        // Insert selection
-        var sql = @"
-        INSERT INTO Selection (FirebaseUserId, GameId, Quantity, PickedUtc, DraftPickId)
-        VALUES (@FirebaseUserId, @GameId, @Quantity, @PickedUtc, @DraftPickId);
-        SELECT CAST(SCOPE_IDENTITY() as bigint);";
-
-        var id = conn.ExecuteScalar<long>(sql, selection, tx);
-        selection.SelectionId = id;
-
-        tx.Commit();
-
-        return selection;
     }
+
     public async Task<bool> DeleteAsync(long selectionId)
     {
         using var conn = _db.Open();
+        using var tx = conn.BeginTransaction();
 
-        // Find the selection first
         var selection = await conn.QuerySingleOrDefaultAsync<Selection>(
-            "SELECT * FROM Selection WHERE SelectionId = @selectionId",
-            new { selectionId });
+            @"SELECT SelectionId, DraftPickId, FirebaseUserId, GameId, Quantity, PickedUtc
+              FROM Selection WHERE SelectionId = @selectionId",
+            new { selectionId }, tx);
 
         if (selection is null)
-            return false;
-
-        // Delete the selection
-        var rows = await conn.ExecuteAsync(
-            "DELETE FROM Selection WHERE SelectionId = @selectionId",
-            new { selectionId });
-
-        if (rows > 0)
         {
-            // Restore the tickets to the game
+            tx.Rollback();
+            return false;
+        }
+        try
+        {
+            var rows = await conn.ExecuteAsync(
+                "DELETE FROM Selection WHERE SelectionId = @selectionId",
+                new { selectionId }, tx);
+            if (rows == 0)
+            {
+                tx.Rollback();
+                return false;
+            }
+
             await conn.ExecuteAsync(
                 "UPDATE Game SET RemainingTickets = RemainingTickets + @Quantity WHERE GameId = @GameId",
-                new { selection.GameId, selection.Quantity });
+                new { selection.GameId, selection.Quantity }, tx);
+            tx.Commit();
+            return true;
         }
-
-        return rows > 0;
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
     }
 
     public async Task<IEnumerable<Selection>> GetByUserAsync(string firebaseUserId)
     {
         using var conn = _db.Open();
         return await conn.QueryAsync<Selection>(
-            "SELECT * FROM Selection WHERE FirebaseUserId = @firebaseUserId ORDER BY PickedUtc DESC",
+            @"SELECT SelectionId, DraftPickId, FirebaseUserId, GameId, Quantity, PickedUtc
+              FROM Selection WHERE FirebaseUserId = @firebaseUserId ORDER BY PickedUtc DESC",
             new { firebaseUserId });
     }
 
-    public async Task<Selection> GetByGameAsync(int gameId)
+    public async Task<IEnumerable<Selection>> GetByGameAsync(int gameId)
     {
         using var conn = _db.Open();
-        return await conn.QuerySingleAsync<Selection>(
-            "SELECT * FROM Selection WHERE GameId = @gameId ORDER BY PickedUtc ASC",
+        return await conn.QueryAsync<Selection>(
+            @"SELECT SelectionId, DraftPickId, FirebaseUserId, GameId, Quantity, PickedUtc
+              FROM Selection WHERE GameId = @gameId ORDER BY PickedUtc ASC",
             new { gameId });
     }
-    public async Task DeleteAsync(int selectionId)
-    {
-        using var conn = _db.Open();
-        await conn.ExecuteAsync("DELETE FROM Selection WHERE SelectionId=@id", new { id = selectionId });
-    }
-
     public async Task<IEnumerable<(string FirebaseUserId, int Tickets)>> GetPickedByUserAsync(int seasonId)
     {
         using var conn = _db.Open();

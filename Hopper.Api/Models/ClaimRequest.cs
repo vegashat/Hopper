@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+namespace Hopper.Api.Models;
 
-namespace Hopper.Api.Models
+public class ClaimRequest
 {
-    public class ClaimRequest
-    {
-        public string FirebaseUserId { get; set; }
-        public string Pin { get; set; }
-    }
+    public string FirebaseUserId { get; set; } = string.Empty;
+    public string Pin { get; set; } = string.Empty;
 }

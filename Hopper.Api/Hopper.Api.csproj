@@ -4,11 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>Hopper.Api</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.16" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />

@@ -2,6 +2,7 @@
 using Hopper.Api.Models;
 using Hopper.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -11,6 +12,7 @@ public class DraftController : ControllerBase
     public DraftController(DraftEngine engine) => _engine = engine;
 
     [HttpPost("start/{seasonId}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Draft>> Start(int seasonId)
     {
         var draft = await _engine.StartDraftAsync(seasonId);
@@ -18,6 +20,7 @@ public class DraftController : ControllerBase
     }
 
     [HttpPost("reset/{seasonId}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Reset(int seasonId)
     {
         await _engine.ResetDraftAsync(seasonId);
@@ -41,6 +44,7 @@ public class DraftController : ControllerBase
     }
 
     [HttpGet("{seasonId}/simulate")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<SimulatedPick>>> Simulate(int seasonId, [FromQuery] int count = 20)
     {
         var picks = await _engine.SimulateDraftAsync(seasonId, count);

@@ -3,6 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Draft, DraftStatus } from '@models/draft.model';
+import { Selection } from '@models/selection.model';
+import { Game } from '@models/game.model';
+import { SeasonService } from './season.service';
+
+interface SelectionMadeEvent {
+  selections: Selection[];
+  game: Game | null;
+}
 import { SignalRService } from './signalr.service';
 import { ToastService } from './toast.service';
 
@@ -12,16 +20,16 @@ import { ToastService } from './toast.service';
 export class DraftService {
   private apiUrl = `${environment.apiUrl}/Draft`;
   private draftStatusSubject = new BehaviorSubject<DraftStatus | null>(null);
-  private season: number = 1;
   draftStatus$ = this.draftStatusSubject.asObservable();
 
   constructor(
     private http: HttpClient,
     private signalR: SignalRService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private seasonService: SeasonService
   ) {
-    this.loadStatus(this.season);
-    this.signalR.connect(this.season);
+    this.loadStatus(this.seasonService.currentSeasonId);
+    this.signalR.connect(this.seasonService.currentSeasonId);
 
     // --- SignalR events ---
     this.signalR.on<DraftStatus>('DraftStarted', status => {
@@ -38,12 +46,13 @@ export class DraftService {
       this.draftStatusSubject.next(status);
     });
 
-    this.signalR.on<any>('SelectionMade', payload => {
-      const selection = payload.selection;
+    this.signalR.on<SelectionMadeEvent>('SelectionMade', payload => {
+      const selection = payload.selections[0];
       const game = payload.game;
+      if (!selection) return;
       const user = selection.displayName || selection.firebaseUserId;
-      const opponent = game?.opponent.name || 'Unknown Opponent';
-      const qty = selection.quantity || 1;
+      const opponent = game?.opponent.name ?? 'Unknown Opponent';
+      const qty = payload.selections.reduce((total, item) => total + item.quantity, 0);
       this.toastService.info(`🎟️ ${user} picked ${qty} tickets for ${opponent}`)
        
     });
@@ -53,9 +62,7 @@ export class DraftService {
     return this.http
       .get<DraftStatus>(`${this.apiUrl}/${seasonId}/status`)
       .pipe(tap(status => this.draftStatusSubject.next(status)))
-      .subscribe(() => {
-        console.log('draft status loaded');
-      });
+      .subscribe({ error: () => this.toastService.error('Unable to load draft status') });
   }
 
   startDraft(seasonId: number): Observable<Draft> {

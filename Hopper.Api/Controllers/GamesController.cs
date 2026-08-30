@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Hopper.Api.Models;
 using Hopper.Api.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Hopper.Api.Controllers;
 
@@ -33,6 +34,7 @@ public class GamesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Game>> Create([FromBody] Game request)
     {
         var created = await _repo.CreateAsync(request);
@@ -40,6 +42,7 @@ public class GamesController : ControllerBase
     }
 
     [HttpPatch("{id}/tickets/{remainingTickets}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateRemainingTickets(int id, int remainingTickets)
     {
         var updated = await _repo.UpdateRemainingTicketsAsync(id, remainingTickets);

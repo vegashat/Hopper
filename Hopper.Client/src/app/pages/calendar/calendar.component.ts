@@ -1,13 +1,15 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { CalendarOptions } from '@fullcalendar/core';
+import { CalendarOptions, EventInput } from '@fullcalendar/core';
 import { GamesService } from '@services/games.service';
 import { Game } from '@models/game.model';
 import { MatDialog } from '@angular/material/dialog';
 import { GameCardComponent } from '@components/game-card/game-card.component';
+import { Selection } from '@models/selection.model';
 
 @Component({
   selector: 'app-calendar',
@@ -19,8 +21,9 @@ import { GameCardComponent } from '@components/game-card/game-card.component';
 export class CalendarComponent implements OnInit {
   private gamesSvc = inject(GamesService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
   games: Game[] = [];
-  seasonId = 1;
+  private events: EventInput[] = [];
 
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, interactionPlugin],
@@ -41,30 +44,32 @@ export class CalendarComponent implements OnInit {
         ? new Date(arg.event.start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
         : '';
 
-      const selections = arg.event.extendedProps['selections'] || [];
+      const selections = (arg.event.extendedProps['selections'] ?? []) as Selection[];
       const remaining = arg.event.extendedProps['remaining'] ?? 0;
 
-      // Add "disabled" class if sold out
-      const disabledStyle = remaining <= 0 ? "style='opacity: 0.5;'" : '';
+      const content = document.createElement('div');
+      content.className = 'logo-cell';
+      content.title = title;
+      if (remaining <= 0) content.classList.add('disabled');
 
-      const html = `
-    <div class="logo-cell" ${disabledStyle} title="${title}">
-      ${logo ? `<img class="opponent-logo" src="${logo}" alt="${title}" />` : ''}
-      <div class="game-time">${time}</div>
-      <div class="remaining">${remaining > 0 ? remaining + ' tickets left' : 'Sold out'}</div>
-        <div class="participants">
-          ${selections.map((s: any) =>
-            `<div class="participant">${s.displayName || s.firebaseUserId} (${s.quantity})</div>`
-          ).join('')}
-        </div>
-    </div>
-  `;
-
-      let content = document.createElement('div');
-      if (remaining == 0) {
-        content.classList.add('disabled'); // Add a custom class
+      if (logo) {
+        const image = document.createElement('img');
+        image.className = 'opponent-logo';
+        image.src = logo;
+        image.alt = title;
+        content.append(image);
       }
-      content.innerHTML = html;
+
+      content.append(
+        this.textElement('game-time', time),
+        this.textElement('remaining', remaining > 0 ? `${remaining} tickets left` : 'Sold out')
+      );
+      const participants = document.createElement('div');
+      participants.className = 'participants';
+      selections.forEach(selection => participants.append(
+        this.textElement('participant', `${selection.displayName || selection.firebaseUserId} (${selection.quantity})`)
+      ));
+      content.append(participants);
       return { domNodes: [content] };
     },
     eventClick: (info) => {
@@ -79,9 +84,9 @@ export class CalendarComponent implements OnInit {
   }
 
   refreshEvents(): void {
-    this.gamesSvc.games$.subscribe(games => {
+    this.gamesSvc.games$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(games => {
       this.games = games;
-      const events = games.map(g => ({
+      this.events = games.map(g => ({
         title: g.opponent.name,
         start: g.gameDateTime,
         allDay: false,
@@ -94,33 +99,41 @@ export class CalendarComponent implements OnInit {
           selections: g.selections
         }
       }));
-      this.calendarOptions = { ...this.calendarOptions, events };
+      this.calendarOptions = { ...this.calendarOptions, events: this.events };
     });
 
   }
 
   openGameDialog(gameId: number) {
-    const game = this.games.find(g => g.gameId == gameId);
+    const game = this.games.find(g => g.gameId === gameId);
+    if (!game) return;
     const dialogRef = this.dialog.open(GameCardComponent, {
       width: '600px',
       data: { game },
     });
 
-    // ✅ listen for updates from inside dialog
-    dialogRef.componentInstance?.gameUpdated.subscribe((updatedGame: Game) => {
+    dialogRef.componentInstance?.gameUpdated.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((updatedGame: Game) => {
 
       this.gamesSvc.updateGame(updatedGame);
-      this.calendarOptions.events = (this.calendarOptions.events as any[]).map(ev =>
-        ev.extendedProps['gameId'] === updatedGame.gameId
+      this.events = this.events.map(event =>
+        event.extendedProps?.['gameId'] === updatedGame.gameId
           ? {
-            ...ev,
+            ...event,
             extendedProps: {
-              ...ev.extendedProps,
+              ...event.extendedProps,
               remaining: updatedGame.remainingTickets,
             },
           }
-          : ev
+          : event
       );
+      this.calendarOptions = { ...this.calendarOptions, events: this.events };
     });
+  }
+
+  private textElement(className: string, text: string): HTMLElement {
+    const element = document.createElement('div');
+    element.className = className;
+    element.textContent = text;
+    return element;
   }
 }

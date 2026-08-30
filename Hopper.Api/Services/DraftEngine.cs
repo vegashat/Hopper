@@ -2,9 +2,6 @@ using Hopper.Api.Models;
 using Hopper.Api.Repositories;
 using Hopper.Api.RealTime;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Components.Forms;
-using System.Security.Cryptography.Pkcs;
-using System.Collections.Immutable;
 using System.Collections.Concurrent;
 
 namespace Hopper.Api.Services;
@@ -54,8 +51,7 @@ public class DraftEngine
     public async Task ResetDraftAsync(int seasonId)
     {
         await _drafts.ResetDraftAsync(seasonId);
-        await _hub.Clients.Group(Group(seasonId)).SendAsync("DraftReset", new { seasonId });
-        await BroadcastStatus(seasonId, "StatusChanged");
+        await BroadcastStatus(seasonId, "DraftReset");
     }
 
     public async Task<IEnumerable<DraftPick>> GetUpcomingAsync(int seasonId, int take = 3)
@@ -73,17 +69,14 @@ public class DraftEngine
     }
 
 
-    public async Task<bool> AdvanceQueueAfterSelectionAsync(int seasonId, string firebaseUserId, int gameId)
+    public async Task<bool> ReplenishQueueAfterSelectionAsync(int seasonId)
     {
-        var seasonLock = GetSeasonLock(seasonId + gameId);
+        var seasonLock = GetSeasonLock(seasonId);
         await seasonLock.WaitAsync();
         try
         {
             var draft = await _drafts.GetActiveDraftAsync(seasonId);
             if (draft is null) return false;
-
-            var claimed = await _drafts.ClaimNextPickAsync(draft.DraftId, expectedFirebaseUserId: firebaseUserId, gameId);
-            if (!claimed) return false;
 
             var upcoming = (await _drafts.GetUpcomingPicksAsync(draft.DraftId, 2)).ToList();
             if (upcoming.Count < 3 && await _selections.AnyTicketsRemainingAsync(seasonId))
@@ -124,7 +117,7 @@ public class DraftEngine
 
             var history = await _drafts.GetDraftPicksAsync(draft.DraftId);
             status.History = history
-                .Where(h => h.ClaimedUtc != null)
+                .Where(h => h.ClaimedUtc.HasValue)
                 .OrderBy(h => h.PickOrder)
                 .Select(h => new HistoryPick
                 {
@@ -167,9 +160,6 @@ public class DraftEngine
         await seasonLock.WaitAsync();  
         try
         {
-            var participants = (await _participants.GetAllAsync())
-                .ToDictionary(p => p.FirebaseUserId);
-
             var allotments = (await _participants.GetAllotmentsBySeasonAsync(seasonId))
                 .ToDictionary(a => a.FirebaseUserId, a => a.TicketAllotment);
 
@@ -196,7 +186,7 @@ public class DraftEngine
                 var remaining = Math.Max(0, allotment - assigned);
                 _logger.LogInformation("User {UserId} was alloted {allotment} tickets and has been assigned {assigned} tickets with {remainging} remaining", uid, allotment, assigned, remaining);
 
-                luck[uid] = (assigned * 1.00) / (allotment * 1.00) * 100;
+                luck[uid] = allotment == 0 ? 100 : assigned * 100.0 / allotment;
 
                 //Don't put into the pool if you are already there
                 if (upcoming.Any(u => u.FirebaseUserId == uid) && remaining == 2){
@@ -239,7 +229,7 @@ public class DraftEngine
                             {
                                 DraftId = draftId,
                                 FirebaseUserId = uid,
-                                PickOrder = startOrder + 1
+                                PickOrder = startOrder
                             });
                             return picks;
                         }
@@ -317,7 +307,10 @@ public class DraftEngine
 
                 weights[uid]--;
                 if (weights[uid] <= 0)
+                {
                     weights.Remove(uid);
+                    pool.RemoveAll(candidate => candidate == uid);
+                }
             }
 
             return picks;

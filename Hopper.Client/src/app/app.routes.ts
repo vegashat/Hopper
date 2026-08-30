@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { ShellComponent } from './shell/shell.component';
 import { GamesListComponent } from './pages/games-list/games-list.component';
+import { adminGuard } from './services/admin.guard';
 
 export const routes: Routes = [
   {
@@ -25,6 +26,7 @@ export const routes: Routes = [
       },
       {
         path: 'admin',
+        canActivate: [adminGuard],
         loadComponent: () =>
           import('./pages/admin/admin.component').then(m => m.AdminComponent),
       },

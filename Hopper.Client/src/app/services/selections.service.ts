@@ -13,8 +13,8 @@ export class SelectionsService {
 
   constructor(private http: HttpClient) {}
 
-  makeSelection(seasonId: number, selection: Selection[]): Observable<Selection> {
-    return this.http.post<Selection>(`${this.baseUrl}/${seasonId}`, selection);
+  makeSelection(seasonId: number, selections: Selection[]): Observable<Selection[]> {
+    return this.http.post<Selection[]>(`${this.baseUrl}/${seasonId}`, selections);
   }
 
   deleteSelection(id: number): Observable<void> {

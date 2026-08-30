@@ -4,6 +4,7 @@ USER root
 
 COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY ./restore.sh /usr/local/bin/restore.sh
+COPY ./migrate.sql /usr/local/bin/migrate.sql
 
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/restore.sh \
     && mkdir -p /var/opt/sqlserver/backup /var/opt/sqlserver/data /var/opt/sqlserver/log

@@ -1,10 +1,12 @@
 // src/app/pages/progress.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { DraftService,  } from '../../services/draft.service';
 import { DraftStatus } from '@models/draft.model';
+import { SeasonService } from '@services/season.service';
 
 @Component({
   selector: 'app-progress',
@@ -15,7 +17,8 @@ import { DraftStatus } from '@models/draft.model';
 })
 export class ProgressComponent implements OnInit {
   status?: DraftStatus;
-  seasonId = 1; // TODO: make dynamic later
+  seasonId = inject(SeasonService).currentSeasonId;
+  private destroyRef = inject(DestroyRef);
 
   constructor(private draftService: DraftService) {}
 
@@ -24,7 +27,7 @@ export class ProgressComponent implements OnInit {
   }
 
   load(): void {
-    this.draftService.draftStatus$.subscribe(status => {
+    this.draftService.draftStatus$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
       this.status  = status ?? undefined;
     });
   }
