@@ -76,6 +76,7 @@ public class DraftRepository : IDraftRepository
                 dp.DraftPickId,
                 dp.DraftId,
                 dp.GameId,
+                g.GameDateTime,
                 dp.PickOrder,
                 dp.ClaimedUtc,
                 p.FirebaseUserId,

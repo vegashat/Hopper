@@ -16,7 +16,6 @@ import { DraftPick, DraftStatus, UpcomingPick, UserProgress } from '@models/draf
   styleUrls: ['./draft-status.component.scss']
 })
 export class DraftStatusComponent implements OnInit {
-  seasonId = 1; // TODO: wire up properly
   status: DraftStatus | null = null;
 
   displayedColumns = ['displayName', 'allotment', 'picked', 'remaining'];

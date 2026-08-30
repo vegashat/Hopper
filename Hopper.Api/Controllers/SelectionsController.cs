@@ -35,7 +35,6 @@ public class SelectionsController : ControllerBase
         await seasonLock.WaitAsync();
         try
         {
-            
             var created = _repo.CreateAsync(request[0]);
             //See if this is a split request.
             if (request.Length > 1)

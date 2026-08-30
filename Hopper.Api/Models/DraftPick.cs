@@ -6,6 +6,7 @@ public class DraftPick
     public int DraftId { get; set; }
     public int PickOrder { get; set; }
     public int GameId { get; set; }
+    public DateTimeOffset GameDateTime { get; set; }
     public string FirebaseUserId { get; set; } 
     public string DisplayName { get; set; }
     public string PickedById { get; set; } 

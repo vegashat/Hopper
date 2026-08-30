@@ -14,6 +14,7 @@ export interface DraftPick {
   pickedById: string;
   pickedByDisplayName: string;
   gameId : number;
+  gameDateTime: Date;
   team: {
     teamId: number;
     name: string;

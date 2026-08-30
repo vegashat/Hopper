@@ -9,7 +9,7 @@ import { Selection } from '@models/selection.model';
 import { SelectionsService } from '@services/selections.service';
 import { GamesService } from '@services/games.service';
 import { DraftService } from '@services/draft.service';
-import { DraftStatus, UpcomingPick } from '@models/draft.model';
+import { DraftStatus } from '@models/draft.model';
 import { ToastService } from '@services/toast.service';
 import { AuthService } from '@services/auth.service';
 import { combineLatest } from 'rxjs';
@@ -70,28 +70,32 @@ export class GameCardComponent implements OnInit {
   }
 
   get canSelect(): boolean {
-    if (this.participant) {
-      if (this.draftStatus && this.draftStatus.upcoming[0]) {
-        return this.participant.isAdmin || this.draftStatus.upcoming[0].firebaseUserId == this.participant?.firebaseUserId;
-      }
-    }
-    return false
+    const nextPick = this.draftStatus?.upcoming?.[0];
+    return !!this.participant
+      && !!nextPick
+      && (this.participant.isAdmin || nextPick.firebaseUserId === this.participant.firebaseUserId);
   }
 
   get CurrentPickerRemainingTickets(): number {
-    var nextPickUserId = this.draftStatus?.upcoming[0].firebaseUserId;
+    const nextPickUserId = this.draftStatus?.upcoming?.[0]?.firebaseUserId;
+    if (!nextPickUserId) return 0;
 
-    return this.draftStatus?.users.filter(u => u.firebaseUserId == nextPickUserId)[0]?.remaining ?? 0;
+    return this.draftStatus?.users?.find(u => u.firebaseUserId === nextPickUserId)?.remaining ?? 0;
   }
 
   pick(quantity: number, splitUserId : string | undefined = undefined) {
     if (!this.game) return;
+    const nextPick = this.draftStatus?.upcoming?.[0];
+    if (!nextPick) {
+      this.toastService.error('No upcoming draft pick is available');
+      return;
+    }
 
     let selections: Selection[] = [{
-      draftPickId: this.draftStatus?.upcoming[0].draftPickId ?? 0,
-      firebaseUserId: this.draftStatus?.upcoming[0].firebaseUserId ?? '',
+      draftPickId: nextPick.draftPickId,
+      firebaseUserId: nextPick.firebaseUserId,
       gameId: this.game.gameId,
-      displayName: this.draftStatus?.upcoming[0].displayName ?? '',
+      displayName: nextPick.displayName,
       quantity,
       pickedUtc: new Date().toISOString(),
     }];
@@ -99,7 +103,7 @@ export class GameCardComponent implements OnInit {
     if(splitUserId){
 
       const splitSelection: Selection = {
-        draftPickId: this.draftStatus?.upcoming[0].draftPickId ?? 0,
+        draftPickId: nextPick.draftPickId,
         firebaseUserId: splitUserId,
         gameId: this.game.gameId,
         displayName: this.draftStatus?.users.find(u => u.firebaseUserId == splitUserId)?.displayName ?? selections[0].displayName,
