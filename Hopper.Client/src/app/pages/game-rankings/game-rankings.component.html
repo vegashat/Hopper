@@ -1,0 +1,57 @@
+<section class="rankings-page">
+  <header>
+    <div>
+      <h1>My Game Rankings</h1>
+      <p>Drag games into your preferred order and choose how many tickets you want.</p>
+    </div>
+    <button mat-flat-button color="primary" (click)="save()"
+      [disabled]="loading || saving || isDraftActive">
+      {{ saving ? 'Saving…' : 'Save rankings' }}
+    </button>
+  </header>
+
+  <div *ngIf="isDraftActive" class="notice" role="status">
+    The draft has started, so rankings are now locked.
+  </div>
+
+  <div *ngIf="!loading" class="columns">
+    <div>
+      <h2>Ranked choices</h2>
+      <div cdkDropList [cdkDropListData]="rankedGames" (cdkDropListDropped)="drop($event)" class="ranking-list">
+        <div *ngFor="let item of rankedGames; let index = index" cdkDrag
+          [cdkDragDisabled]="isDraftActive" class="game-row ranking-row">
+          <mat-icon cdkDragHandle class="drag-handle">drag_indicator</mat-icon>
+          <span class="rank">{{ index + 1 }}</span>
+          <img [src]="'assets/' + item.game.opponent.logoUrl" [alt]="item.game.opponent.name" />
+          <div class="game-info">
+            <strong>{{ item.game.opponent.name }}</strong>
+            <span>{{ item.game.gameDateTime | date:'mediumDate' }}</span>
+          </div>
+          <mat-select [(value)]="item.quantity" [disabled]="isDraftActive" aria-label="Ticket quantity">
+            <mat-option [value]="2">2 tickets</mat-option>
+            <mat-option [value]="4">4 tickets</mat-option>
+          </mat-select>
+          <button mat-icon-button (click)="remove(index)" [disabled]="isDraftActive" aria-label="Remove ranking">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+      <p *ngIf="rankedGames.length === 0" class="empty">Add games to create your ranking.</p>
+    </div>
+
+    <div>
+      <h2>Available games</h2>
+      <div *ngFor="let game of availableGames" class="game-row available-row">
+        <img [src]="'assets/' + game.opponent.logoUrl" [alt]="game.opponent.name" />
+        <div class="game-info">
+          <strong>{{ game.opponent.name }}</strong>
+          <span>{{ game.gameDateTime | date:'mediumDate' }}</span>
+        </div>
+        <button mat-stroked-button color="primary" class="add-button"
+          (click)="add(game)" [disabled]="isDraftActive">
+          <mat-icon>add</mat-icon> Add
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

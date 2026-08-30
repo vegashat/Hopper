@@ -2,9 +2,6 @@ using Hopper.Api.Models;
 using Hopper.Api.Repositories;
 using Hopper.Api.RealTime;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Components.Forms;
-using System.Security.Cryptography.Pkcs;
-using System.Collections.Immutable;
 using System.Collections.Concurrent;
 
 namespace Hopper.Api.Services;
@@ -41,21 +38,29 @@ public class DraftEngine
 
     public async Task<Draft> StartDraftAsync(int seasonId)
     {
-        var draft = await _drafts.StartDraftAsync(seasonId);
+        var seasonLock = GetSeasonLock(seasonId);
+        await seasonLock.WaitAsync();
+        try
+        {
+            var draft = await _drafts.StartDraftAsync(seasonId);
 
-        var picks = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, startOrder: 1, count: 3);
-        if (picks.Any())
-            await _drafts.AddDraftPicksAsync(picks);
+            var picks = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, startOrder: 1, count: 3);
+            if (picks.Any())
+                await _drafts.AddDraftPicksAsync(picks);
 
-        await BroadcastStatus(seasonId, "DraftStarted");
-        return draft;
+            await BroadcastStatus(seasonId, "DraftStarted");
+            return draft;
+        }
+        finally
+        {
+            seasonLock.Release();
+        }
     }
 
     public async Task ResetDraftAsync(int seasonId)
     {
         await _drafts.ResetDraftAsync(seasonId);
-        await _hub.Clients.Group(Group(seasonId)).SendAsync("DraftReset", new { seasonId });
-        await BroadcastStatus(seasonId, "StatusChanged");
+        await BroadcastStatus(seasonId, "DraftReset");
     }
 
     public async Task<IEnumerable<DraftPick>> GetUpcomingAsync(int seasonId, int take = 3)
@@ -73,26 +78,16 @@ public class DraftEngine
     }
 
 
-    public async Task<bool> AdvanceQueueAfterSelectionAsync(int seasonId, string firebaseUserId, int gameId)
+    public async Task<bool> ReplenishQueueAfterSelectionAsync(int seasonId)
     {
-        var seasonLock = GetSeasonLock(seasonId + gameId);
+        var seasonLock = GetSeasonLock(seasonId);
         await seasonLock.WaitAsync();
         try
         {
             var draft = await _drafts.GetActiveDraftAsync(seasonId);
             if (draft is null) return false;
 
-            var claimed = await _drafts.ClaimNextPickAsync(draft.DraftId, expectedFirebaseUserId: firebaseUserId, gameId);
-            if (!claimed) return false;
-
-            var upcoming = (await _drafts.GetUpcomingPicksAsync(draft.DraftId, 2)).ToList();
-            if (upcoming.Count < 3 && await _selections.AnyTicketsRemainingAsync(seasonId))
-            {
-                var start = await _drafts.GetLastPickOrderAsync(draft.DraftId) + 1;
-                var next = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, start, 1);
-                foreach (var p in next) await _drafts.AddDraftPickAsync(p);
-            }
-
+            await ReplenishQueueAsync(seasonId, draft);
             await BroadcastStatus(seasonId, "PickClaimed");
             return true;
         }
@@ -100,6 +95,16 @@ public class DraftEngine
         {
             seasonLock.Release();
         }
+    }
+
+    private async Task ReplenishQueueAsync(int seasonId, Draft draft)
+    {
+        var upcoming = (await _drafts.GetUpcomingPicksAsync(draft.DraftId, 3)).ToList();
+        if (upcoming.Count >= 3 || !await _selections.AnyTicketsRemainingAsync(seasonId)) return;
+
+        var start = await _drafts.GetLastPickOrderAsync(draft.DraftId) + 1;
+        var next = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, start, 1);
+        foreach (var pick in next) await _drafts.AddDraftPickAsync(pick);
     }
 
     public async Task<DraftStatus> BuildStatusAsync(int seasonId)
@@ -124,7 +129,7 @@ public class DraftEngine
 
             var history = await _drafts.GetDraftPicksAsync(draft.DraftId);
             status.History = history
-                .Where(h => h.ClaimedUtc != null)
+                .Where(h => h.ClaimedUtc.HasValue)
                 .OrderBy(h => h.PickOrder)
                 .Select(h => new HistoryPick
                 {
@@ -163,13 +168,6 @@ public class DraftEngine
     private async Task<List<DraftPick>> GenerateWeightedPicksAsync(
         int draftId, int seasonId, int startOrder, int count)
     {
-        var seasonLock = GetSeasonLock(seasonId);
-        await seasonLock.WaitAsync();  
-        try
-        {
-            var participants = (await _participants.GetAllAsync())
-                .ToDictionary(p => p.FirebaseUserId);
-
             var allotments = (await _participants.GetAllotmentsBySeasonAsync(seasonId))
                 .ToDictionary(a => a.FirebaseUserId, a => a.TicketAllotment);
 
@@ -196,7 +194,7 @@ public class DraftEngine
                 var remaining = Math.Max(0, allotment - assigned);
                 _logger.LogInformation("User {UserId} was alloted {allotment} tickets and has been assigned {assigned} tickets with {remainging} remaining", uid, allotment, assigned, remaining);
 
-                luck[uid] = (assigned * 1.00) / (allotment * 1.00) * 100;
+                luck[uid] = allotment == 0 ? 100 : assigned * 100.0 / allotment;
 
                 //Don't put into the pool if you are already there
                 if (upcoming.Any(u => u.FirebaseUserId == uid) && remaining == 2){
@@ -239,7 +237,7 @@ public class DraftEngine
                             {
                                 DraftId = draftId,
                                 FirebaseUserId = uid,
-                                PickOrder = startOrder + 1
+                                PickOrder = startOrder
                             });
                             return picks;
                         }
@@ -317,15 +315,13 @@ public class DraftEngine
 
                 weights[uid]--;
                 if (weights[uid] <= 0)
+                {
                     weights.Remove(uid);
+                    pool.RemoveAll(candidate => candidate == uid);
+                }
             }
 
             return picks;
-        }
-        finally
-        {
-            seasonLock.Release(); // 🔓 release lock
-        }
     }
 
     // --- Simulation helpers (unchanged, but still useful) ---

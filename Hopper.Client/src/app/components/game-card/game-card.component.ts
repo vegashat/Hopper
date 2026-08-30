@@ -1,4 +1,5 @@
-import { Component, Input, Inject, Output, EventEmitter, Optional, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, Input, Inject, Output, EventEmitter, Optional, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +10,7 @@ import { Selection } from '@models/selection.model';
 import { SelectionsService } from '@services/selections.service';
 import { GamesService } from '@services/games.service';
 import { DraftService } from '@services/draft.service';
-import { DraftStatus, UpcomingPick } from '@models/draft.model';
+import { DraftStatus } from '@models/draft.model';
 import { ToastService } from '@services/toast.service';
 import { AuthService } from '@services/auth.service';
 import { combineLatest } from 'rxjs';
@@ -17,6 +18,7 @@ import { Participant } from '@models/participant.model';
 import { SplitPickDialogComponent } from '@components/split-pick-dialog/split-pick-dialog.component';
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule} from '@angular/material/menu';
+import { SeasonService } from '@services/season.service';
 
 @Component({
   selector: 'app-game-card',
@@ -30,8 +32,8 @@ export class GameCardComponent implements OnInit {
   @Output() gameUpdated = new EventEmitter<Game>();
   private draftService = inject(DraftService);
   private dialog = inject(MatDialog);
+  private destroyRef = inject(DestroyRef);
 
-  private seasonId = 1;
   participant: Participant | undefined;
   private draftStatus: DraftStatus | undefined;
 
@@ -40,6 +42,7 @@ export class GameCardComponent implements OnInit {
     private toastService: ToastService,
     private gamesService: GamesService,
     private authService: AuthService,
+    private seasonService: SeasonService,
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: { game: Game }
   ) {
     if (data?.game) {
@@ -53,7 +56,7 @@ export class GameCardComponent implements OnInit {
     const draftStatus$ = this.draftService.draftStatus$;
     combineLatest([
       user$, draftStatus$
-    ]).pipe()
+    ]).pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(([user, status]) => {
         if (status) {
           this.draftStatus = status;
@@ -70,28 +73,32 @@ export class GameCardComponent implements OnInit {
   }
 
   get canSelect(): boolean {
-    if (this.participant) {
-      if (this.draftStatus && this.draftStatus.upcoming[0]) {
-        return this.participant.isAdmin || this.draftStatus.upcoming[0].firebaseUserId == this.participant?.firebaseUserId;
-      }
-    }
-    return false
+    const nextPick = this.draftStatus?.upcoming?.[0];
+    return !!this.participant
+      && !!nextPick
+      && (this.participant.isAdmin || nextPick.firebaseUserId === this.participant.firebaseUserId);
   }
 
   get CurrentPickerRemainingTickets(): number {
-    var nextPickUserId = this.draftStatus?.upcoming[0].firebaseUserId;
+    const nextPickUserId = this.draftStatus?.upcoming?.[0]?.firebaseUserId;
+    if (!nextPickUserId) return 0;
 
-    return this.draftStatus?.users.filter(u => u.firebaseUserId == nextPickUserId)[0]?.remaining ?? 0;
+    return this.draftStatus?.users?.find(u => u.firebaseUserId === nextPickUserId)?.remaining ?? 0;
   }
 
   pick(quantity: number, splitUserId : string | undefined = undefined) {
     if (!this.game) return;
+    const nextPick = this.draftStatus?.upcoming?.[0];
+    if (!nextPick) {
+      this.toastService.error('No upcoming draft pick is available');
+      return;
+    }
 
     let selections: Selection[] = [{
-      draftPickId: this.draftStatus?.upcoming[0].draftPickId ?? 0,
-      firebaseUserId: this.draftStatus?.upcoming[0].firebaseUserId ?? '',
+      draftPickId: nextPick.draftPickId,
+      firebaseUserId: nextPick.firebaseUserId,
       gameId: this.game.gameId,
-      displayName: this.draftStatus?.upcoming[0].displayName ?? '',
+      displayName: nextPick.displayName,
       quantity,
       pickedUtc: new Date().toISOString(),
     }];
@@ -99,7 +106,7 @@ export class GameCardComponent implements OnInit {
     if(splitUserId){
 
       const splitSelection: Selection = {
-        draftPickId: this.draftStatus?.upcoming[0].draftPickId ?? 0,
+        draftPickId: nextPick.draftPickId,
         firebaseUserId: splitUserId,
         gameId: this.game.gameId,
         displayName: this.draftStatus?.users.find(u => u.firebaseUserId == splitUserId)?.displayName ?? selections[0].displayName,
@@ -109,7 +116,7 @@ export class GameCardComponent implements OnInit {
       selections = [...(selections), splitSelection];
     }
 
-    this.selectionsService.makeSelection(this.seasonId, selections).subscribe({
+    this.selectionsService.makeSelection(this.seasonService.currentSeasonId, selections).subscribe({
       next: () => {
         let fullQuantity = 0;
         selections.forEach(sel => {
@@ -119,7 +126,7 @@ export class GameCardComponent implements OnInit {
         this.game.remainingTickets -= fullQuantity;
 
         this.gamesService.updateGame(this.game);
-        this.draftService.loadStatus(this.seasonId);
+        this.draftService.loadStatus(this.seasonService.currentSeasonId);
 
         // this.toastService.success(`Picked ${fullQuantity} tickets for ${this.game.opponent.name} by ${selections[0].displayName}`);
       },
@@ -137,7 +144,7 @@ export class GameCardComponent implements OnInit {
       data: {game: game, participant: this.participant },
     });
 
-    dialogRef.afterClosed().subscribe((result:any) => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result?: { splitUserId: string }) => {
       if (result) {
         this.pick(2, result.splitUserId); // call pick with split target
       }

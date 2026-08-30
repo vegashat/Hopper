@@ -18,7 +18,11 @@
         <mat-icon>groups</mat-icon>
         <span class="link-label">Participants</span>
       </a>
-      <a mat-list-item routerLink="/admin" routerLinkActive="active-link" (click)="sidenav.close()">
+      <a mat-list-item routerLink="/rankings" routerLinkActive="active-link" (click)="sidenav.close()">
+        <mat-icon>format_list_numbered</mat-icon>
+        <span class="link-label">My Rankings</span>
+      </a>
+      <a *ngIf="currentUser?.isAdmin" mat-list-item routerLink="/admin" routerLinkActive="active-link" (click)="sidenav.close()">
         <mat-icon>admin_panel_settings</mat-icon>
         <span class="link-label">Admin</span>
       </a>
@@ -48,6 +52,7 @@
           <button mat-icon-button routerLink="/calendar"><mat-icon>calendar_month</mat-icon></button>
           <button mat-icon-button routerLink="/history"><mat-icon>history</mat-icon></button>
           <button mat-icon-button routerLink="/participants"><mat-icon>groups</mat-icon></button>
+          <button mat-icon-button routerLink="/rankings" aria-label="My Rankings"><mat-icon>format_list_numbered</mat-icon></button>
         </div>
 
         <!-- Center/Right: Search -->
@@ -56,6 +61,11 @@
             <mat-icon>search</mat-icon>
             <input
               type="text"
+              name="game-search"
+              role="searchbox"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
               placeholder="Search games"
               [(ngModel)]="searchTerm"
               (ngModelChange)="onSearchChange($event)" />

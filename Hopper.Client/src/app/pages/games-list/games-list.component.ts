@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { combineLatest } from 'rxjs';
 
@@ -22,6 +23,7 @@ import { GameCardComponent } from '@components/game-card/game-card.component';
 export class GamesListComponent implements OnInit {
   private gamesSvc = inject(GamesService);
   private filterSvc = inject(FilterService);
+  private destroyRef = inject(DestroyRef);
 
   games: Game[] = [];
   filteredGames: Game[] = [];
@@ -30,7 +32,7 @@ export class GamesListComponent implements OnInit {
     combineLatest([
       this.gamesSvc.games$,
       this.filterSvc.filterState$,
-    ]).subscribe(([games, filterState]) => {
+    ]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(([games, filterState]) => {
       this.games = games;
       this.applyFilters(filterState);
     });

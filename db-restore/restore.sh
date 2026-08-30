@@ -2,7 +2,7 @@
 set -e
 
 DB_NAME=${DB_NAME:-Hopper}
-SA_PASSWORD=${SA_PASSWORD:-"MilkHoney01!"}
+: "${SA_PASSWORD:?SA_PASSWORD must be set}"
 SQL_HOST=${SQL_HOST:-hopperdb}
 BAK_PATH=${BAK_PATH:-/backup/Hopper.bak}
 

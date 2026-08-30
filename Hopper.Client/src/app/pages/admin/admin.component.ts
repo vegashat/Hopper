@@ -1,4 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,6 +10,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { DraftService } from '@services/draft.service';
 import { DraftStatus } from '@models/draft.model';
 import { GamesService } from '@services/games.service';
+import { SeasonService } from '@services/season.service';
 
 @Component({
   selector: 'app-admin',
@@ -26,10 +28,12 @@ import { GamesService } from '@services/games.service';
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit {
-  seasonId : number = 1;
+  private seasonService = inject(SeasonService);
+  seasonId = this.seasonService.currentSeasonId;
   status: DraftStatus | undefined;
   draftService = inject(DraftService)
   gameService = inject(GamesService)
+  private destroyRef = inject(DestroyRef);
 
   constructor() { }
 
@@ -51,7 +55,7 @@ export class AdminComponent implements OnInit {
   displayedParticipantColumns = ['name', 'email', 'isAdmin'];
 
   loadStatus(): void {
-    this.draftService.draftStatus$.subscribe(status => {
+    this.draftService.draftStatus$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
       this.status = status ?? undefined;
     });
   }

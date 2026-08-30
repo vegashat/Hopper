@@ -1,6 +1,5 @@
 using Dapper;
 using Hopper.Api.Models;
-using Hopper.Api.Repositories;
 
 namespace Hopper.Api.Repositories;
 
@@ -22,7 +21,8 @@ public class ParticipantRepository : IParticipantRepository
     {
         using var conn = _db.Open();
         return await conn.QuerySingleOrDefaultAsync<Participant>(
-            "SELECT * FROM Participant WHERE FirebaseUserId=@firebaseUserId",
+            @"SELECT FirebaseUserId, DisplayName, Email, IsAdmin, CreatedUtc, Pin
+              FROM Participant WHERE FirebaseUserId = @firebaseUserId",
             new { firebaseUserId });
     }
 
@@ -44,7 +44,10 @@ public class ParticipantRepository : IParticipantRepository
     {
         using var conn = _db.Open();
         return await conn.QueryAsync<Participant>(
-            "SELECT p.*, pa.TicketAllotment as AllottedTickets FROM Participant p inner join ParticipantAllotment pa on p.firebaseUserId = pa.firebaseuserId ORDER BY DisplayName");
+            @"SELECT p.FirebaseUserId, p.DisplayName, p.Email, p.IsAdmin, p.CreatedUtc, p.Pin,
+                     CAST(0 AS int) AS AllottedTickets
+              FROM Participant p
+              ORDER BY p.DisplayName");
     }
 
     public async Task<bool> UpdatePinAsync(Participant participant)
@@ -60,7 +63,8 @@ public class ParticipantRepository : IParticipantRepository
     {
         using var conn = _db.Open();
         return await conn.QueryAsync<ParticipantAllotment>(
-            "SELECT * FROM ParticipantAllotment WHERE SeasonId = @seasonId",
+            @"SELECT FirebaseUserId, SeasonId, TicketAllotment
+              FROM ParticipantAllotment WHERE SeasonId = @seasonId",
             new { seasonId });
     }
 

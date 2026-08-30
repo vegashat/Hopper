@@ -1,4 +1,5 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, Inject, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -29,6 +30,7 @@ import { MatSlideToggle } from '@angular/material/slide-toggle';
 ]
 })
 export class FilterDialogComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   months = [
     { num: 10, label: 'Oct' },
     { num: 11, label: 'Nov' },
@@ -60,7 +62,7 @@ export class FilterDialogComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.filterSvc.filterState$.subscribe(state => {
+    this.filterSvc.filterState$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(state => {
       this.searchTerm = state.searchTerm;
       this.selectedMonths = state.filters?.months ?? [];
       this.selectedDays = state.filters?.daysOfWeek ?? [];

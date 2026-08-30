@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>Ranked game available</h2>
+
+<mat-dialog-content>
+  <div class="suggestion">
+    <img [src]="'assets/' + data.game.opponent.logoUrl" [alt]="data.game.opponent.name" />
+    <div>
+      <strong>{{ data.game.opponent.name }}</strong>
+      <span>{{ data.game.gameDateTime | date:'medium' }}</span>
+      <span>{{ data.ranking.quantity }} tickets · Ranked #{{ data.ranking.rankOrder }}</span>
+    </div>
+  </div>
+  <p>This is your highest-ranked choice that currently has enough tickets available.</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="false">Cancel</button>
+  <button mat-flat-button color="primary" [mat-dialog-close]="true">
+    Select {{ data.ranking.quantity }} tickets
+  </button>
+</mat-dialog-actions>

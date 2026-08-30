@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Hopper.Api.Repositories;
 using Hopper.Api.Models;
+using Hopper.Api.Services;
 
 namespace Hopper.Api.Controllers;
 
@@ -9,10 +10,12 @@ namespace Hopper.Api.Controllers;
 public class ParticipantsController : ControllerBase
 {
     private readonly IParticipantRepository _repo;
+    private readonly AppSessionService _sessions;
 
-    public ParticipantsController(IParticipantRepository repo)
+    public ParticipantsController(IParticipantRepository repo, AppSessionService sessions)
     {
         _repo = repo;
+        _sessions = sessions;
     }
 
     // POST api/participants
@@ -56,21 +59,64 @@ public class ParticipantsController : ControllerBase
         var participant = await _repo.GetByIdAsync(req.FirebaseUserId);
         if (participant == null) return NotFound();
 
-        if (participant.Pin is null && req.Pin.Length > 0 )
-        {
-            // First time claim → set PIN
-            participant.Pin = req.Pin;
-            await _repo.UpdatePinAsync(participant);
-            return Ok(new { success = true, message = "PIN set. Account claimed!" });
-        }
-        else
-        {
-            // Already has PIN → must match
-            if (participant.Pin == req.Pin && participant.Pin.Length > 0)
-                return Ok(new { success = true, message = "Login successful!" });
+        if (string.IsNullOrWhiteSpace(req.Pin))
+            return BadRequest(new { success = false, message = "A PIN is required." });
 
-            return Unauthorized(new { success = false, message = "Invalid PIN." });
+        if (participant.Pin is null)
+        {
+            participant.Pin = PinHasher.Hash(req.Pin);
+            await _repo.UpdatePinAsync(participant);
+            var token = CreateSession(participant);
+            return Ok(new {
+                success = true,
+                message = "PIN set. Account claimed!",
+                token
+            });
         }
+
+        if (PinHasher.Verify(req.Pin, participant.Pin))
+        {
+            if (PinHasher.NeedsUpgrade(participant.Pin))
+            {
+                participant.Pin = PinHasher.Hash(req.Pin);
+                await _repo.UpdatePinAsync(participant);
+            }
+            var token = CreateSession(participant);
+            return Ok(new {
+                success = true,
+                message = "Login successful!",
+                token
+            });
+        }
+
+        return Unauthorized(new { success = false, message = "Invalid PIN." });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete(SessionAuthenticationHandler.CookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = Request.IsHttps,
+            Path = "/"
+        });
+        return NoContent();
+    }
+
+    private string CreateSession(Participant participant)
+    {
+        var token = _sessions.Create(participant.FirebaseUserId, participant.IsAdmin);
+        Response.Cookies.Append(SessionAuthenticationHandler.CookieName, token, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = Request.IsHttps,
+            Path = "/",
+            MaxAge = TimeSpan.FromHours(12)
+        });
+        return token;
     }
 
 }

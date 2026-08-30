@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Game } from '@models/game.model';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs/operators';
@@ -7,10 +7,16 @@ import { environment } from 'environments/environment';
 import { SignalRService } from './signalr.service';
 import { DraftStatus } from '@models/draft.model';
 import { ToastService } from './toast.service';
+import { Selection } from '@models/selection.model';
+import { SeasonService } from './season.service';
+
+interface SelectionMadeEvent {
+  selections: Selection[];
+  game: Game | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class GamesService {
-  private seasonId: number = 1;
   private gamesSubject = new BehaviorSubject<Game[]>([]);
   games$ = this.gamesSubject.asObservable();
   apiUrl = `${environment.apiUrl}/games`;
@@ -18,14 +24,15 @@ export class GamesService {
   constructor(
     private http: HttpClient,
     private signalR: SignalRService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private seasonService: SeasonService
   ) {
-    this.loadSeasonGames(this.seasonId);
-    this.signalR.connect(this.seasonId);
+    this.loadSeasonGames(this.seasonService.currentSeasonId);
+    this.signalR.connect(this.seasonService.currentSeasonId);
 
     // --- SignalR events ---
-    this.signalR.on<any>('SelectionMade', payload => {
-      const updated: Game = payload.game;
+    this.signalR.on<SelectionMadeEvent>('SelectionMade', payload => {
+      const updated = payload.game;
       if (updated) {
         this.updateGame(updated);
 
@@ -36,17 +43,17 @@ export class GamesService {
     });
     this.signalR.on<DraftStatus>('DraftStarted', status => {
       this.loadSeasonGames(status.seasonId);
-      this.toastService.info('✅ Draft has started!');
     });
   }
 
   loadSeasonGames(seasonId: number): void {
-    this.http
-      .get<Game[]>(`${this.apiUrl}/season/${seasonId}`)
+    this.getSeasonGames(seasonId)
       .pipe(tap(games => this.gamesSubject.next(games)))
-      .subscribe(() => {
-        console.log('Games Loaded');
-      });
+      .subscribe({ error: () => this.toastService.error('Unable to load games') });
+  }
+
+  getSeasonGames(seasonId: number): Observable<Game[]> {
+    return this.http.get<Game[]>(`${this.apiUrl}/season/${seasonId}`);
   }
 
   updateGame(updated: Game) {

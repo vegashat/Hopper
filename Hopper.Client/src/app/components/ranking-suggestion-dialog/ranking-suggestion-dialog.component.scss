@@ -1,0 +1,21 @@
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .75rem 0;
+}
+
+.suggestion img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.suggestion div {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.suggestion strong { font-size: 1.1rem; }
+.suggestion span, p { color: #666; }

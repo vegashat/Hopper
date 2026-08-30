@@ -2,6 +2,7 @@
 
 # Compiled output
 /dist
+/Hopper.Client/dist/
 /tmp
 /out-tsc
 /bazel-out
@@ -43,3 +44,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+.fake
+.env

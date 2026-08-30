@@ -14,11 +14,12 @@ export interface DraftPick {
   pickedById: string;
   pickedByDisplayName: string;
   gameId : number;
+  gameDateTime: string | null;
   team: {
     teamId: number;
     name: string;
     logoUrl?: string;
-  };
+  } | null;
   quantity: number;
   createdUtc: string;
   claimedUtc: string;
@@ -29,17 +30,23 @@ export interface DraftStatus {
   seasonId: number;
   isActive: boolean;
   upcoming: UpcomingPick[];
-  history: DraftPick[];
+  history: HistoryPick[];
   users: UserProgress[];
   totalTicketsRemaining: number;
+}
+
+export interface HistoryPick {
+  pickOrder: number;
+  firebaseUserId: string;
+  displayName: string | null;
+  claimedUtc: string | null;
 }
 
 export interface UpcomingPick {
   draftPickId: number;
   pickOrder: number;
   firebaseUserId: string;
-  displayName: string;
-  remainingTickets: number;
+  displayName: string | null;
 }
 
 export interface UserProgress {

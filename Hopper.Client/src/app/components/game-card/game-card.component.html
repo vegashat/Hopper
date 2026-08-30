@@ -52,7 +52,7 @@
         <div *ngIf="!draftIsActive" class="draft-warning">
           Draft isn’t active yet. Please wait for the admin to start.
         </div>
-        <div *ngIf="CurrentPickerRemainingTickets < 4 && game.remainingTickets >= 4" class="draft-warning">
+        <div *ngIf="draftIsActive && CurrentPickerRemainingTickets < 4 && game.remainingTickets >= 4" class="draft-warning">
           You only have two tickets remaining
         </div>
       </div>

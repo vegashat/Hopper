@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
@@ -16,6 +17,7 @@ import { DraftStatus } from '@models/draft.model';
   styleUrls: ['./participants.component.scss']
 })
 export class ParticipantsComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   participants: UserProgress[] = [];
   status: DraftStatus | undefined;
   displayedColumns: string[] = ['displayName', 'picked', 'allotment', 'remaining', 'lastPick', 'longestWait', 'progress'];
@@ -23,9 +25,7 @@ export class ParticipantsComponent implements OnInit {
   constructor(private draftService: DraftService) { }
 
   ngOnInit(): void {
-    // You’ll need the current seasonId from somewhere (config, service, etc.)
-    const seasonId = 1;
-    this.draftService.draftStatus$.subscribe(status => {
+    this.draftService.draftStatus$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
       if (status && status.users) {
         this.status = status;
         this.participants = status.users ?? [];
@@ -64,7 +64,7 @@ export class ParticipantsComponent implements OnInit {
 
       if (userPicks.length < 2) {
         // If only one (or zero) picks, gap is total length since that pick
-        return history.length - (userPicks[0]?.pickOrder ?? 0);
+        return (this.status?.history.length ?? 0) - (userPicks[0]?.pickOrder ?? 0);
       }
 
       let maxGap = 0;
@@ -79,7 +79,7 @@ export class ParticipantsComponent implements OnInit {
       }
 
       // Optionally, include "gap since last pick until now"
-      const gapSinceLast = history.length - userPicks[userPicks.length - 1].pickOrder;
+      const gapSinceLast = (this.status?.history.length ?? 0) - userPicks[userPicks.length - 1].pickOrder;
       if (gapSinceLast > maxGap) {
         maxGap = gapSinceLast;
       }
@@ -94,6 +94,6 @@ export class ParticipantsComponent implements OnInit {
   }
 
   getProgress(p: UserProgress): number {
-    return (p.picked / p.allotment) * 100;
+    return p.allotment > 0 ? (p.picked / p.allotment) * 100 : 0;
   }
 }

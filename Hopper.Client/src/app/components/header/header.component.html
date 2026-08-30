@@ -46,7 +46,6 @@
       <mat-icon>search</mat-icon>
     </button>
 
-    <!-- Logout only for admins -->
-    <button *ngIf="authService.currentUser?.isAdmin" mat-button class="logout-btn" (click)="logout()">Logout</button>
+    <button mat-button class="logout-btn" (click)="logout()">Logout</button>
   </ng-template>
 </mat-toolbar>

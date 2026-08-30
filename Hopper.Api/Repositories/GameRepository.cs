@@ -6,8 +6,8 @@ namespace Hopper.Api.Repositories;
 public interface IGameRepository
 {
     Task<IEnumerable<Game>> GetAllAsync();
-    Task<Game?> GetByIdAsync(int gameId);   // updated
-    Task<IEnumerable<Game>> GetBySeasonAsync(int seasonId, int? gameId = null); // optional gameId filter
+    Task<Game?> GetByIdAsync(int gameId);
+    Task<IEnumerable<Game>> GetBySeasonAsync(int seasonId, int? gameId = null);
     Task<Game> CreateAsync(Game game);
     Task<bool> UpdateRemainingTicketsAsync(int gameId, int remainingTickets);
 }

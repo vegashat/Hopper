@@ -1,4 +1,5 @@
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +13,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '@services/auth.service';
 import { FilterService } from '@services/filter.service';
 import { FilterDialogComponent } from '@components/filter-dialog/filter-dialog.component';
+import { SeasonService } from '@services/season.service';
 
 @Component({
   selector: 'app-header',
@@ -25,9 +27,10 @@ export class HeaderComponent implements OnInit {
   @Output() menuToggle = new EventEmitter<void>();
   dialog = inject(MatDialog)
   authService = inject(AuthService);
-  seasonId = 1;
+  seasonId = inject(SeasonService).currentSeasonId;
   status: DraftStatus | null = null;
   private filterSvc = inject(FilterService);
+  private destroyRef = inject(DestroyRef);
 
 
 
@@ -43,7 +46,7 @@ export class HeaderComponent implements OnInit {
 
   loadStatus(): void {
 
-    this.draftService.draftStatus$.subscribe(status => {
+    this.draftService.draftStatus$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
       this.status = status;
     });
   }
@@ -60,8 +63,8 @@ export class HeaderComponent implements OnInit {
 
   get lastPick(): string {
 
-    const lastPick = this.status?.history.filter((h: { claimedUtc: string; }) => h.claimedUtc !== "0001-01-01T00:00:00")
-                    .sort((a, b) => new Date(b.claimedUtc).getTime() - new Date(a.claimedUtc).getTime())[0];
+    const lastPick = this.status?.history.filter(h => h.claimedUtc)
+                    .sort((a, b) => new Date(b.claimedUtc!).getTime() - new Date(a.claimedUtc!).getTime())[0];
     const name = this.status?.users.find(u => u.firebaseUserId == lastPick?.firebaseUserId)?.displayName ?? 'N/A';
     return name;
     // return `${name} picked ${lastPick?.quantity} tix to ${lastPick?.team.name}`;
@@ -82,7 +85,7 @@ export class HeaderComponent implements OnInit {
       data: { filters: currentState.filters }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
       if (result) {
         this.filterSvc.setFilters(result);
       }

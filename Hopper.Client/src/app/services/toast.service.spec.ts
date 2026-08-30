@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
 import { ToastService } from './toast.service';
+import { TEST_PROVIDERS } from '../testing/test-providers';
 
 describe('ToastService', () => {
   let service: ToastService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: TEST_PROVIDERS });
     service = TestBed.inject(ToastService);
   });
 
