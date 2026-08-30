@@ -2,6 +2,14 @@
   width: 100%;
 }
 
+.history-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .team-cell {
   display: flex;
   align-items: center;
@@ -12,4 +20,11 @@
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .history-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

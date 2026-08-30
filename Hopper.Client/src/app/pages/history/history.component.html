@@ -2,6 +2,10 @@
   <mat-slide-toggle [checked]="showMineOnly" (change)="onToggleMine($event.checked)" [disabled]="!currentUserId">
     Show only my picks
   </mat-slide-toggle>
+  <button mat-stroked-button color="primary" (click)="downloadCalendar()" [disabled]="!currentUserId">
+    <mat-icon>calendar_add_on</mat-icon>
+    Download my calendar
+  </button>
 </div>
 
 <div *ngIf="loading" class="loading">
