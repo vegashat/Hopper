@@ -38,14 +38,23 @@ public class DraftEngine
 
     public async Task<Draft> StartDraftAsync(int seasonId)
     {
-        var draft = await _drafts.StartDraftAsync(seasonId);
+        var seasonLock = GetSeasonLock(seasonId);
+        await seasonLock.WaitAsync();
+        try
+        {
+            var draft = await _drafts.StartDraftAsync(seasonId);
 
-        var picks = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, startOrder: 1, count: 3);
-        if (picks.Any())
-            await _drafts.AddDraftPicksAsync(picks);
+            var picks = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, startOrder: 1, count: 3);
+            if (picks.Any())
+                await _drafts.AddDraftPicksAsync(picks);
 
-        await BroadcastStatus(seasonId, "DraftStarted");
-        return draft;
+            await BroadcastStatus(seasonId, "DraftStarted");
+            return draft;
+        }
+        finally
+        {
+            seasonLock.Release();
+        }
     }
 
     public async Task ResetDraftAsync(int seasonId)
@@ -78,14 +87,7 @@ public class DraftEngine
             var draft = await _drafts.GetActiveDraftAsync(seasonId);
             if (draft is null) return false;
 
-            var upcoming = (await _drafts.GetUpcomingPicksAsync(draft.DraftId, 2)).ToList();
-            if (upcoming.Count < 3 && await _selections.AnyTicketsRemainingAsync(seasonId))
-            {
-                var start = await _drafts.GetLastPickOrderAsync(draft.DraftId) + 1;
-                var next = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, start, 1);
-                foreach (var p in next) await _drafts.AddDraftPickAsync(p);
-            }
-
+            await ReplenishQueueAsync(seasonId, draft);
             await BroadcastStatus(seasonId, "PickClaimed");
             return true;
         }
@@ -93,6 +95,16 @@ public class DraftEngine
         {
             seasonLock.Release();
         }
+    }
+
+    private async Task ReplenishQueueAsync(int seasonId, Draft draft)
+    {
+        var upcoming = (await _drafts.GetUpcomingPicksAsync(draft.DraftId, 3)).ToList();
+        if (upcoming.Count >= 3 || !await _selections.AnyTicketsRemainingAsync(seasonId)) return;
+
+        var start = await _drafts.GetLastPickOrderAsync(draft.DraftId) + 1;
+        var next = await GenerateWeightedPicksAsync(draft.DraftId, seasonId, start, 1);
+        foreach (var pick in next) await _drafts.AddDraftPickAsync(pick);
     }
 
     public async Task<DraftStatus> BuildStatusAsync(int seasonId)
@@ -156,10 +168,6 @@ public class DraftEngine
     private async Task<List<DraftPick>> GenerateWeightedPicksAsync(
         int draftId, int seasonId, int startOrder, int count)
     {
-        var seasonLock = GetSeasonLock(seasonId);
-        await seasonLock.WaitAsync();  
-        try
-        {
             var allotments = (await _participants.GetAllotmentsBySeasonAsync(seasonId))
                 .ToDictionary(a => a.FirebaseUserId, a => a.TicketAllotment);
 
@@ -314,11 +322,6 @@ public class DraftEngine
             }
 
             return picks;
-        }
-        finally
-        {
-            seasonLock.Release(); // 🔓 release lock
-        }
     }
 
     // --- Simulation helpers (unchanged, but still useful) ---

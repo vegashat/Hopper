@@ -2,7 +2,7 @@
 <div mat-dialog-content>
   <mat-form-field appearance="fill" class="full-width">
     <mat-label>Select Participant</mat-label>
-    <mat-select [(ngModel)]="selectedUser">
+    <mat-select [(ngModel)]="selectedUser" name="participant" [attr.autocomplete]="'off'">
       <mat-option *ngFor="let p of participants" [value]="p.firebaseUserId">
         {{ p.displayName }} ({{ p.allottedTickets }} tickets)
       </mat-option>
@@ -11,7 +11,8 @@
 
   <mat-form-field appearance="fill" class="full-width">
     <mat-label>PIN</mat-label>
-    <input matInput [(ngModel)]="pin" type="password" />
+    <input matInput [(ngModel)]="pin" type="password" name="current-password"
+      autocomplete="current-password" />
   </mat-form-field>
 
   <div *ngIf="error" class="error">{{ error }}</div>

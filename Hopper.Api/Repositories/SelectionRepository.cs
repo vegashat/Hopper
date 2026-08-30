@@ -5,7 +5,8 @@ namespace Hopper.Api.Repositories;
 
 public interface ISelectionRepository
 {
-    Task<IReadOnlyList<Selection>> CreateForNextPickAsync(int seasonId, IReadOnlyList<Selection> selections);
+    Task<IReadOnlyList<Selection>> CreateForNextPickAsync(
+        int seasonId, IReadOnlyList<Selection> selections, long? fulfilledRankingId = null);
     Task<IEnumerable<Selection>> GetByUserAsync(string firebaseUserId);
     Task<IEnumerable<Selection>> GetByGameAsync(int gameId);
     Task<bool> DeleteAsync(long selectionId);
@@ -19,7 +20,8 @@ public class SelectionRepository : ISelectionRepository
 
     public async Task<IReadOnlyList<Selection>> CreateForNextPickAsync(
         int seasonId,
-        IReadOnlyList<Selection> selections)
+        IReadOnlyList<Selection> selections,
+        long? fulfilledRankingId = null)
     {
         if (selections.Count is < 1 or > 2)
             throw new ArgumentException("A pick must contain one or two selections.");
@@ -100,6 +102,29 @@ public class SelectionRepository : ISelectionRepository
 
             if (claimed != 1)
                 throw new InvalidOperationException("The draft pick was already claimed.");
+
+            if (fulfilledRankingId.HasValue)
+            {
+                var fulfilled = await conn.ExecuteAsync(@"
+                    UPDATE GameRanking
+                    SET IsFulfilled = 1
+                    WHERE GameRankingId = @fulfilledRankingId
+                      AND SeasonId = @seasonId
+                      AND FirebaseUserId = @firebaseUserId
+                      AND GameId = @gameId
+                      AND Quantity = @quantity
+                      AND IsFulfilled = 0;",
+                    new
+                    {
+                        fulfilledRankingId,
+                        seasonId,
+                        first.FirebaseUserId,
+                        first.GameId,
+                        first.Quantity
+                    }, tx);
+                if (fulfilled != 1)
+                    throw new InvalidOperationException("The selected game ranking is no longer available.");
+            }
 
             tx.Commit();
             return selections;

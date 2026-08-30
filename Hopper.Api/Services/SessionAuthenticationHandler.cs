@@ -8,6 +8,7 @@ namespace Hopper.Api.Services;
 public sealed class SessionAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     public const string SchemeName = "HopperSession";
+    public const string CookieName = "hopper_session";
     private readonly AppSessionService _sessions;
 
     public SessionAuthenticationHandler(
@@ -22,10 +23,13 @@ public sealed class SessionAuthenticationHandler : AuthenticationHandler<Authent
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var authorization = Request.Headers.Authorization.ToString();
-        if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        var token = authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authorization[7..].Trim()
+            : Request.Cookies[CookieName];
+        if (string.IsNullOrWhiteSpace(token))
             return Task.FromResult(AuthenticateResult.NoResult());
 
-        var session = _sessions.Get(authorization[7..].Trim());
+        var session = _sessions.Get(token);
         if (session is null)
             return Task.FromResult(AuthenticateResult.Fail("The session is invalid or expired."));
 

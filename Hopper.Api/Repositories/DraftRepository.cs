@@ -55,7 +55,8 @@ public class DraftRepository : IDraftRepository
             DELETE FROM DraftPick WHERE DraftId IN (SELECT DraftId FROM Draft WHERE SeasonId=@seasonId);
             DELETE FROM Draft WHERE SeasonId=@seasonId;
             DELETE FROM Selection WHERE GameId IN (SELECT GameId FROM Game WHERE SeasonId = @seasonId);
-            UPDATE Game SET RemainingTickets = 4 WHERE SeasonId = @seasonId;",
+            UPDATE Game SET RemainingTickets = 4 WHERE SeasonId = @seasonId;
+            UPDATE GameRanking SET IsFulfilled = 0 WHERE SeasonId = @seasonId;",
             new { seasonId }, tx);
         tx.Commit();
     }

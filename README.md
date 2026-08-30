@@ -19,3 +19,7 @@ docker compose up --build
 ```
 
 Previously committed database passwords should be rotated before deployment.
+
+The SQL Server container applies [db/migrate.sql](db/migrate.sql) after restoring the
+database. If the API points at a separately managed SQL Server, run that migration
+against the Hopper database before starting the API.

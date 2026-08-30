@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Game } from '@models/game.model';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs/operators';
@@ -47,10 +47,13 @@ export class GamesService {
   }
 
   loadSeasonGames(seasonId: number): void {
-    this.http
-      .get<Game[]>(`${this.apiUrl}/season/${seasonId}`)
+    this.getSeasonGames(seasonId)
       .pipe(tap(games => this.gamesSubject.next(games)))
       .subscribe({ error: () => this.toastService.error('Unable to load games') });
+  }
+
+  getSeasonGames(seasonId: number): Observable<Game[]> {
+    return this.http.get<Game[]>(`${this.apiUrl}/season/${seasonId}`);
   }
 
   updateGame(updated: Game) {

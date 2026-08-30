@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ShellComponent } from './shell/shell.component';
 import { GamesListComponent } from './pages/games-list/games-list.component';
 import { adminGuard } from './services/admin.guard';
+import { authGuard } from './services/auth.guard';
 
 export const routes: Routes = [
   {
@@ -23,6 +24,12 @@ export const routes: Routes = [
         path: 'participants',
         loadComponent: () =>
           import('./pages/participants/participants.component').then(m => m.ParticipantsComponent),
+      },
+      {
+        path: 'rankings',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./pages/game-rankings/game-rankings.component').then(m => m.GameRankingsComponent),
       },
       {
         path: 'admin',

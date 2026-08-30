@@ -66,10 +66,11 @@ public class ParticipantsController : ControllerBase
         {
             participant.Pin = PinHasher.Hash(req.Pin);
             await _repo.UpdatePinAsync(participant);
+            var token = CreateSession(participant);
             return Ok(new {
                 success = true,
                 message = "PIN set. Account claimed!",
-                token = _sessions.Create(participant.FirebaseUserId, participant.IsAdmin)
+                token
             });
         }
 
@@ -80,14 +81,42 @@ public class ParticipantsController : ControllerBase
                 participant.Pin = PinHasher.Hash(req.Pin);
                 await _repo.UpdatePinAsync(participant);
             }
+            var token = CreateSession(participant);
             return Ok(new {
                 success = true,
                 message = "Login successful!",
-                token = _sessions.Create(participant.FirebaseUserId, participant.IsAdmin)
+                token
             });
         }
 
         return Unauthorized(new { success = false, message = "Invalid PIN." });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete(SessionAuthenticationHandler.CookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = Request.IsHttps,
+            Path = "/"
+        });
+        return NoContent();
+    }
+
+    private string CreateSession(Participant participant)
+    {
+        var token = _sessions.Create(participant.FirebaseUserId, participant.IsAdmin);
+        Response.Cookies.Append(SessionAuthenticationHandler.CookieName, token, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = Request.IsHttps,
+            Path = "/",
+            MaxAge = TimeSpan.FromHours(12)
+        });
+        return token;
     }
 
 }

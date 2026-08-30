@@ -5,3 +5,34 @@ IF OBJECT_ID(N'dbo.Participant', N'U') IS NOT NULL
 BEGIN
     ALTER TABLE dbo.Participant ALTER COLUMN Pin nvarchar(200) NULL;
 END;
+
+IF OBJECT_ID(N'dbo.GameRanking', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.GameRanking
+    (
+        GameRankingId bigint IDENTITY(1,1) NOT NULL
+            CONSTRAINT PK_GameRanking PRIMARY KEY,
+        SeasonId int NOT NULL,
+        FirebaseUserId nvarchar(128) NOT NULL,
+        GameId int NOT NULL,
+        RankOrder int NOT NULL,
+        Quantity tinyint NOT NULL,
+        IsFulfilled bit NOT NULL CONSTRAINT DF_GameRanking_IsFulfilled DEFAULT (0),
+        CONSTRAINT CK_GameRanking_RankOrder CHECK (RankOrder > 0),
+        CONSTRAINT CK_GameRanking_Quantity CHECK (Quantity IN (2, 4)),
+        CONSTRAINT UQ_GameRanking_UserGame UNIQUE (SeasonId, FirebaseUserId, GameId),
+        CONSTRAINT UQ_GameRanking_UserRank UNIQUE (SeasonId, FirebaseUserId, RankOrder)
+    );
+
+    CREATE INDEX IX_GameRanking_AutomaticPick
+        ON dbo.GameRanking (SeasonId, FirebaseUserId, RankOrder)
+        INCLUDE (GameId, Quantity);
+END;
+
+IF OBJECT_ID(N'dbo.GameRanking', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.GameRanking', N'IsFulfilled') IS NULL
+BEGIN
+    ALTER TABLE dbo.GameRanking
+        ADD IsFulfilled bit NOT NULL
+            CONSTRAINT DF_GameRanking_IsFulfilled DEFAULT (0);
+END;

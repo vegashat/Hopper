@@ -4,8 +4,6 @@ using Hopper.Api.Repositories;
 using Hopper.Api.Services;
 using Hopper.Api.RealTime;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 
 namespace Hopper.Api.Controllers;
 
@@ -27,17 +25,15 @@ public class SelectionsController : ControllerBase
     }
 
     [HttpPost("{seasonId}")]
-    [Authorize]
-    public async Task<ActionResult<IReadOnlyList<Selection>>> Create(int seasonId, [FromBody] Selection[] request)
+    public async Task<ActionResult<IReadOnlyList<Selection>>> Create(
+        int seasonId,
+        [FromBody] Selection[] request,
+        [FromQuery] long? fulfilledRankingId = null)
     {
         try
         {
             if (request.Length == 0) return BadRequest("At least one selection is required.");
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!User.IsInRole("Admin") && currentUserId != request[0].FirebaseUserId)
-                return Forbid();
-
-            var created = await _repo.CreateForNextPickAsync(seasonId, request);
+            var created = await _repo.CreateForNextPickAsync(seasonId, request, fulfilledRankingId);
 
             await _draftEngine.ReplenishQueueAfterSelectionAsync(seasonId);
 
@@ -63,7 +59,6 @@ public class SelectionsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         return await _repo.DeleteAsync(id) ? NoContent() : NotFound();

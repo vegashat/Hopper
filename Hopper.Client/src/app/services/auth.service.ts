@@ -7,6 +7,7 @@ import { BehaviorSubject, Observable, tap } from "rxjs";
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private static readonly sessionVersion = '2';
   private apiUrl = `${environment.apiUrl}/participants`;
   private currentUserSubject = new BehaviorSubject<Participant | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
@@ -14,11 +15,13 @@ export class AuthService {
   constructor(private http: HttpClient) {
     const stored = localStorage.getItem('user');
     const token = localStorage.getItem('sessionToken');
-    if (stored && token) {
+    const version = localStorage.getItem('sessionVersion');
+    if (stored && token && version === AuthService.sessionVersion) {
       this.currentUserSubject.next(JSON.parse(stored) as Participant);
     } else {
       localStorage.removeItem('user');
       localStorage.removeItem('sessionToken');
+      localStorage.removeItem('sessionVersion');
     }
   }
 
@@ -31,14 +34,17 @@ export class AuthService {
         if (res.success) {
           localStorage.setItem('user', JSON.stringify(participant));
           localStorage.setItem('sessionToken', res.token);
+          localStorage.setItem('sessionVersion', AuthService.sessionVersion);
           this.currentUserSubject.next(participant);
         }
       }));
   }
 
   logout() {
+    this.http.post<void>(`${this.apiUrl}/logout`, {}).subscribe();
     localStorage.removeItem('user');
     localStorage.removeItem('sessionToken');
+    localStorage.removeItem('sessionVersion');
     this.currentUserSubject.next(null);
   }
 
