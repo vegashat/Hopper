@@ -24,7 +24,7 @@ interface CounterState {
     <section *ngIf="admin || state?.enabled" class="counter">
       <h2>{{ admin ? 'Steven counter settings' : 'The Steven counter' }}</h2>
       <ng-container *ngIf="admin">
-        <p>Just for laughs. This does not affect draft order or picks.</p>
+        <!-- <p>Just for laughs. This does not affect draft order or picks.</p> -->
         <p *ngIf="!state && !loadError" role="status">Loading counter settings…</p>
         <p *ngIf="loadError" role="alert">{{ loadError }}</p>
         <label>Steven's account
