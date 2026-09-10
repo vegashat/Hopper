@@ -6,6 +6,8 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { RankingQuantityDialogComponent } from '../../components/ranking-quantity-dialog/ranking-quantity-dialog.component';
 import { Game } from '@models/game.model';
 import { GameRankingsService } from '@services/game-rankings.service';
 import { GamesService } from '@services/games.service';
@@ -28,7 +30,8 @@ interface RankedGame {
     DragDropModule,
     MatButtonModule,
     MatIconModule,
-    MatSelectModule
+    MatSelectModule,
+    MatDialogModule
   ],
   templateUrl: './game-rankings.component.html',
   styleUrls: ['./game-rankings.component.scss']
@@ -40,12 +43,26 @@ export class GameRankingsComponent implements OnInit {
   private draftService = inject(DraftService);
   private toast = inject(ToastService);
   private destroyRef = inject(DestroyRef);
+  private dialog = inject(MatDialog);
 
   rankedGames: RankedGame[] = [];
   availableGames: Game[] = [];
   isDraftActive = false;
   loading = true;
   saving = false;
+  readonly weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  selectedWeekday: string | null = null;
+  private readonly weekdayFormatter = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    timeZone: 'America/Chicago'
+  });
+
+  get filteredAvailableGames(): Game[] {
+    if (this.selectedWeekday === null) return this.availableGames;
+    return this.availableGames.filter(game =>
+      this.weekdayFormatter.format(new Date(game.gameDateTime)) === this.selectedWeekday
+    );
+  }
 
   ngOnInit(): void {
     const seasonId = this.seasonService.currentSeasonId;
@@ -76,8 +93,15 @@ export class GameRankingsComponent implements OnInit {
 
   add(game: Game): void {
     if (this.isDraftActive) return;
-    this.availableGames = this.availableGames.filter(item => item.gameId !== game.gameId);
-    this.rankedGames.push({ game, quantity: 2 });
+    this.dialog.open<RankingQuantityDialogComponent, Game, 2 | 4>(RankingQuantityDialogComponent, {
+      data: game,
+      width: '360px'
+    }).afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(quantity => {
+      if ((quantity !== 2 && quantity !== 4) || this.isDraftActive ||
+          !this.availableGames.some(item => item.gameId === game.gameId)) return;
+      this.availableGames = this.availableGames.filter(item => item.gameId !== game.gameId);
+      this.rankedGames.push({ game, quantity });
+    });
   }
 
   remove(index: number): void {

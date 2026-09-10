@@ -3,6 +3,7 @@ export interface Participant {
   displayName: string;
   email: string;
   isAdmin: boolean;
+  pinResetUsed?: boolean;
   createdUtc: string; // ISO date string
   allottedTickets: number;
 }

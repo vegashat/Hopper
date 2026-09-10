@@ -47,9 +47,9 @@ public class ParticipantsController : ControllerBase
 
     // GET api/participants
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Participant>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Participant>>> GetAll([FromQuery] int? seasonId = null)
     {
-        var participants = await _repo.GetAllAsync();
+        var participants = await _repo.GetAllAsync(seasonId);
         return Ok(participants);
     }
 
@@ -62,10 +62,11 @@ public class ParticipantsController : ControllerBase
         if (string.IsNullOrWhiteSpace(req.Pin))
             return BadRequest(new { success = false, message = "A PIN is required." });
 
+        var previousPin = participant.Pin;
         if (participant.Pin is null)
         {
             participant.Pin = PinHasher.Hash(req.Pin);
-            await _repo.UpdatePinAsync(participant);
+            if (!await _repo.UpdatePinAsync(participant, previousPin)) return Conflict(new { message = "PIN changed. Please try again." });
             var token = CreateSession(participant);
             return Ok(new {
                 success = true,
@@ -79,7 +80,7 @@ public class ParticipantsController : ControllerBase
             if (PinHasher.NeedsUpgrade(participant.Pin))
             {
                 participant.Pin = PinHasher.Hash(req.Pin);
-                await _repo.UpdatePinAsync(participant);
+                if (!await _repo.UpdatePinAsync(participant, previousPin)) return Conflict(new { message = "PIN changed. Please try again." });
             }
             var token = CreateSession(participant);
             return Ok(new {
@@ -90,6 +91,24 @@ public class ParticipantsController : ControllerBase
         }
 
         return Unauthorized(new { success = false, message = "Invalid PIN." });
+    }
+
+    [HttpPost("reset-pin")]
+    public async Task<IActionResult> ResetPin([FromBody] ClaimRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Pin) || req.Pin.Length > 128)
+            return BadRequest(new { message = "Enter a new PIN of up to 128 characters." });
+        if (!await _repo.ResetPinAsync(req.FirebaseUserId, PinHasher.Hash(req.Pin), false))
+            return Conflict(new { message = "Self-service reset is unavailable. Please ask the administrator." });
+        return Ok(new { success = true });
+    }
+
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    [HttpPost("{firebaseUserId}/reset-pin")]
+    public async Task<IActionResult> AdminResetPin(string firebaseUserId)
+    {
+        if (!await _repo.ResetPinAsync(firebaseUserId, null, true)) return NotFound();
+        return Ok(new { success = true });
     }
 
     [HttpPost("logout")]
@@ -107,7 +126,7 @@ public class ParticipantsController : ControllerBase
 
     private string CreateSession(Participant participant)
     {
-        var token = _sessions.Create(participant.FirebaseUserId, participant.IsAdmin);
+        var token = _sessions.Create(participant.FirebaseUserId, participant.IsAdmin, participant.SessionVersion);
         Response.Cookies.Append(SessionAuthenticationHandler.CookieName, token, new CookieOptions
         {
             HttpOnly = true,

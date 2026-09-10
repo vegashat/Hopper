@@ -36,3 +36,8 @@ BEGIN
         ADD IsFulfilled bit NOT NULL
             CONSTRAINT DF_GameRanking_IsFulfilled DEFAULT (0);
 END;
+
+IF COL_LENGTH(N'dbo.Participant', N'PinResetUsed') IS NULL
+    ALTER TABLE dbo.Participant ADD PinResetUsed bit NOT NULL CONSTRAINT DF_Participant_PinResetUsed DEFAULT (0);
+IF COL_LENGTH(N'dbo.Participant', N'SessionVersion') IS NULL
+    ALTER TABLE dbo.Participant ADD SessionVersion int NOT NULL CONSTRAINT DF_Participant_SessionVersion DEFAULT (0);

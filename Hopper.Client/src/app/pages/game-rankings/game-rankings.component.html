@@ -2,13 +2,24 @@
   <header>
     <div>
       <h1>My Game Rankings</h1>
-      <p>Drag games into your preferred order and choose how many tickets you want.</p>
+      <p>Choose 2 or 4 tickets when adding games, then drag them into your preferred order.</p>
     </div>
     <button mat-flat-button color="primary" (click)="save()"
       [disabled]="loading || saving || isDraftActive">
       {{ saving ? 'Saving…' : 'Save rankings' }}
     </button>
   </header>
+
+  <div class="weekday-filter" role="group" aria-label="Filter available games by weekday">
+    <span class="filter-label">Available games by day</span>
+    <div class="weekday-options">
+      <button mat-stroked-button [class.selected]="selectedWeekday === null"
+        [attr.aria-pressed]="selectedWeekday === null" (click)="selectedWeekday = null">All</button>
+      <button *ngFor="let day of weekdays" mat-stroked-button
+        [class.selected]="selectedWeekday === day" [attr.aria-pressed]="selectedWeekday === day"
+        (click)="selectedWeekday = day">{{ day }}</button>
+    </div>
+  </div>
 
   <div *ngIf="isDraftActive" class="notice" role="status">
     The draft has started, so rankings are now locked.
@@ -25,7 +36,10 @@
           <img [src]="'assets/' + item.game.opponent.logoUrl" [alt]="item.game.opponent.name" />
           <div class="game-info">
             <strong>{{ item.game.opponent.name }}</strong>
-            <span>{{ item.game.gameDateTime | date:'mediumDate' }}</span>
+            <span>
+              {{ item.game.gameDateTime | date:'EEE, MMM d, y':'America/Chicago' }} ·
+              {{ item.game.gameDateTime | date:'shortTime':'America/Chicago' }}
+            </span>
           </div>
           <mat-select [(value)]="item.quantity" [disabled]="isDraftActive" aria-label="Ticket quantity">
             <mat-option [value]="2">2 tickets</mat-option>
@@ -41,11 +55,17 @@
 
     <div>
       <h2>Available games</h2>
-      <div *ngFor="let game of availableGames" class="game-row available-row">
+      <p *ngIf="filteredAvailableGames.length === 0" class="empty" role="status">
+        {{ selectedWeekday ? 'No available games on ' + selectedWeekday + '.' : 'No available games.' }}
+      </p>
+      <div *ngFor="let game of filteredAvailableGames" class="game-row available-row">
         <img [src]="'assets/' + game.opponent.logoUrl" [alt]="game.opponent.name" />
         <div class="game-info">
           <strong>{{ game.opponent.name }}</strong>
-          <span>{{ game.gameDateTime | date:'mediumDate' }}</span>
+          <span>
+            {{ game.gameDateTime | date:'EEE, MMM d, y':'America/Chicago' }} ·
+            {{ game.gameDateTime | date:'shortTime':'America/Chicago' }}
+          </span>
         </div>
         <button mat-stroked-button color="primary" class="add-button"
           (click)="add(game)" [disabled]="isDraftActive">
