@@ -44,3 +44,21 @@ work. A second self-service reset must fail, including direct API requests.
 As an administrator, clear the PIN and confirm the participant can set a new one
 but still cannot self-reset. A non-admin request to the admin reset endpoint must
 be rejected. Two simultaneous self-service requests must yield only one success.
+
+## Steven counter
+
+Apply `db/migrate.sql`, then open **Admin → Fun**, choose Steven's participant
+account, check **Show counter on draft screen**, and save. It starts hidden.
+Signed-in participants see the counter on **Draft Status**, refreshed every five
+seconds. Each participant has a server-enforced 30-second cooldown that persists
+across reloads and API restarts. Steven's clicks add two; everyone else's add one.
+This feature never changes draft order, rankings, or selections.
+
+Admins can hide the feature or reset its total. Resetting the total preserves
+cooldowns. The total is shared across seasons until an admin resets it.
+
+For a development database check, enable the feature and click as an ordinary
+participant (+1), then immediately click again (HTTP 429, total unchanged).
+Sign in as the configured Steven and choose a participant (+2 and the backfire
+message). Check the total in another browser, hide the feature and verify clicks
+are rejected, then confirm a non-admin cannot change settings or reset the total.

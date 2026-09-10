@@ -1,3 +1,4 @@
+import { StevenCounterComponent } from '../../components/steven-counter/steven-counter.component';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'environments/environment';
 import { Participant } from '@models/participant.model';
@@ -19,7 +20,7 @@ import { SeasonService } from '@services/season.service';
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [
+  imports: [StevenCounterComponent,
     CommonModule,
     MatTabsModule,
     MatButtonModule,
