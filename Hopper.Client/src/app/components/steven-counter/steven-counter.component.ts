@@ -50,7 +50,7 @@ interface CounterState {
           {{ state?.isSteven ? 'Screw ' + targetName : 'Screw Steven' }}
         </button>
         <p *ngIf="remaining > 0">Give Steven a break! Try again in {{ remaining }}s.</p>
-        <small>Just for laughs. Your draft picks are safe.</small>
+        <!-- <small>Just for laughs. Your draft picks are safe.</small> -->
       </ng-container>
       <p role="status" *ngIf="message">{{ message }}</p>
     </section>
