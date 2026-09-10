@@ -1,3 +1,8 @@
+import { StevenCounterComponent } from '../../components/steven-counter/steven-counter.component';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'environments/environment';
+import { Participant } from '@models/participant.model';
+import { ToastService } from '@services/toast.service';
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -15,7 +20,7 @@ import { SeasonService } from '@services/season.service';
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [
+  imports: [StevenCounterComponent,
     CommonModule,
     MatTabsModule,
     MatButtonModule,
@@ -35,10 +40,36 @@ export class AdminComponent implements OnInit {
   gameService = inject(GamesService)
   private destroyRef = inject(DestroyRef);
 
+  private http = inject(HttpClient);
+  private toast = inject(ToastService);
+  resettingUser: string | null = null;
+
+  resetPin(participant: Participant): void {
+    if (!window.confirm('Reset PIN for ' + participant.displayName + '? Their sessions will end and they must choose a new PIN at their next login.')) return;
+    this.resettingUser = participant.firebaseUserId;
+    this.http.post(`${environment.apiUrl}/participants/${encodeURIComponent(participant.firebaseUserId)}/reset-pin`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          participant.pinResetUsed = true;
+          this.resettingUser = null;
+          this.toast.success('PIN cleared. Participant can choose a new PIN at login.');
+        },
+        error: () => {
+          this.resettingUser = null;
+          this.toast.error('Unable to reset PIN.');
+        }
+      });
+  }
+
   constructor() { }
 
   ngOnInit() : void {
     this.loadStatus();
+    this.http.get<Participant[]>(`${environment.apiUrl}/participants`)
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: participants => this.participants = participants,
+        error: () => this.toast.error('Unable to load participants.')
+      });
   }
 
   games = [
@@ -46,13 +77,10 @@ export class AdminComponent implements OnInit {
     { gameId: 2, opponent: 'Denver Nuggets', gameDateTime: new Date(), arena: 'Paycom', remainingTickets: 4 },
   ];
 
-  participants = [
-    { firebaseUserId: 'abc', displayName: 'Jeaux Test', email: 'jeaux@test.com', isAdmin: true },
-    { firebaseUserId: 'xyz', displayName: 'Kartik Test', email: 'kartik@test.com', isAdmin: false },
-  ];
+  participants: Participant[] = [];
 
   displayedGameColumns = ['opponent', 'date', 'arena', 'tickets', 'actions'];
-  displayedParticipantColumns = ['name', 'email', 'isAdmin'];
+  displayedParticipantColumns = ['name', 'isAdmin', 'pinReset'];
 
   loadStatus(): void {
     this.draftService.draftStatus$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {

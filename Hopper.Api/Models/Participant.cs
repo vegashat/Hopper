@@ -10,6 +10,9 @@ public class Participant
     public bool IsAdmin { get; set; }
     public DateTime CreatedUtc { get; set; }
     public int AllottedTickets { get; set; }
+    public bool PinResetUsed { get; set; }
+    [JsonIgnore]
+    public int SessionVersion { get; set; }
     [JsonIgnore]
     public string? Pin { get; set; }
 }

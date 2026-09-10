@@ -2,6 +2,7 @@
   <mat-card-title>Admin Panel</mat-card-title>
   <mat-card-content>
     <mat-tab-group>
+      <mat-tab label="Fun"><app-steven-counter [admin]="true"></app-steven-counter></mat-tab>
 
 
       <!-- Draft Tab -->
@@ -154,10 +155,17 @@
           <ng-container matColumnDef="isAdmin">
             <th mat-header-cell *matHeaderCellDef> Admin </th>
             <td mat-cell *matCellDef="let p">
-              <mat-slide-toggle [checked]="p.isAdmin"></mat-slide-toggle>
+              {{ p.isAdmin ? 'Yes' : 'No' }}
             </td>
           </ng-container>
 
+          <ng-container matColumnDef="pinReset">
+            <th mat-header-cell *matHeaderCellDef>PIN recovery</th>
+            <td mat-cell *matCellDef="let p">
+              <span>{{ p.pinResetUsed ? 'Self-service used' : 'Self-service available' }}</span>
+              <button mat-button (click)="resetPin(p)" [disabled]="resettingUser !== null">Reset PIN</button>
+            </td>
+          </ng-container>
           <tr mat-header-row *matHeaderRowDef="displayedParticipantColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedParticipantColumns"></tr>
         </table>

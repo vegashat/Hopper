@@ -1,3 +1,4 @@
+import { StevenCounterComponent } from '../../components/steven-counter/steven-counter.component';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -12,7 +13,7 @@ import { DraftStatus, HistoryPick, UpcomingPick, UserProgress } from '@models/dr
 @Component({
   selector: 'app-draft-status',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatTableModule, MatListModule, MatDividerModule],
+  imports: [StevenCounterComponent,CommonModule, MatCardModule, MatTableModule, MatListModule, MatDividerModule],
   templateUrl: './draft-status.component.html',
   styleUrls: ['./draft-status.component.scss']
 })

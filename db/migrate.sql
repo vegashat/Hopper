@@ -36,3 +36,26 @@ BEGIN
         ADD IsFulfilled bit NOT NULL
             CONSTRAINT DF_GameRanking_IsFulfilled DEFAULT (0);
 END;
+
+IF COL_LENGTH(N'dbo.Participant', N'PinResetUsed') IS NULL
+    ALTER TABLE dbo.Participant ADD PinResetUsed bit NOT NULL CONSTRAINT DF_Participant_PinResetUsed DEFAULT (0);
+IF COL_LENGTH(N'dbo.Participant', N'SessionVersion') IS NULL
+    ALTER TABLE dbo.Participant ADD SessionVersion int NOT NULL CONSTRAINT DF_Participant_SessionVersion DEFAULT (0);
+
+IF OBJECT_ID(N'dbo.StevenCounter', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.StevenCounter (
+        Id int NOT NULL PRIMARY KEY CHECK (Id = 1),
+        Enabled bit NOT NULL DEFAULT (0),
+        StevenId nvarchar(128) NULL,
+        Total bigint NOT NULL DEFAULT (0)
+    );
+    INSERT INTO dbo.StevenCounter (Id) VALUES (1);
+END;
+IF OBJECT_ID(N'dbo.StevenCounterCooldown', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.StevenCounterCooldown (
+        FirebaseUserId nvarchar(128) NOT NULL PRIMARY KEY,
+        NextClickUtc datetime2 NOT NULL
+    );
+END;
