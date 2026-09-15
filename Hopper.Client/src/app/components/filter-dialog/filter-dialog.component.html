@@ -11,7 +11,7 @@
   </mat-form-field>
 
   <h3>Available</h3>
-  <mat-slide-toggle ngModel name="showAvailableOnly" [(ngModel)]="showAvailableOnly" (click)="toggleAvailable()">Only Available Games</mat-slide-toggle>
+  <mat-slide-toggle name="showAvailableOnly" [checked]="showAvailableOnly" (change)="setAvailableOnly($event.checked)">Only Available Games</mat-slide-toggle>
 
   <h3>Months</h3>
   <mat-button-toggle-group multiple [(ngModel)]="selectedMonths" (ngModelChange)="updateMonths($event)" hideMultipleSelectionIndicator="true">

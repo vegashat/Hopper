@@ -34,63 +34,33 @@ export class ParticipantsComponent implements OnInit {
   }
 
   getPicksSinceLastPick(firebaseUserId: string): number {
-    if (!this.status?.history || this.status.history.length === 0) return 0;
-
-    // Find the last pick made by this user
-    const lastPick = [...this.status.history]
-      .reverse()
-      .find(p => p.firebaseUserId === firebaseUserId);
-
-    if (!lastPick) {
-      // User hasn't picked yet → all picks count
-      return this.status.history.length;
-    }
-
-    // Total picks since their last pick
-    const picksAfter = this.status.history.filter(p => p.pickOrder > lastPick.pickOrder);
-    return picksAfter.length;
+    return this.getWaitStats(firebaseUserId).current;
   }
 
   getBiggestGapForUser(firebaseUserId: string): number {
-    // Filter picks that belong to the user
-    const userPicks = this.status?.history
-      .filter(p => p.firebaseUserId === firebaseUserId)
-      .sort((a, b) => a.pickOrder - b.pickOrder);
+    return this.getWaitStats(firebaseUserId).longest;
+  }
 
-    if (userPicks) {
-      if(userPicks?.findIndex(u => u.firebaseUserId == firebaseUserId) < 0){
-        return 0
-      }
+  private getWaitStats(firebaseUserId: string): { current: number; longest: number } {
+    // Split selections share a turn; gaps in pickOrder are not completed picks.
+    const turns = new Map<number, Set<string>>();
+    for (const pick of this.status?.history ?? []) {
+      if (!turns.has(pick.pickOrder)) turns.set(pick.pickOrder, new Set());
+      turns.get(pick.pickOrder)!.add(pick.firebaseUserId);
+    }
 
-      if (userPicks.length < 2) {
-        // If only one (or zero) picks, gap is total length since that pick
-        return (this.status?.history.length ?? 0) - (userPicks[0]?.pickOrder ?? 0);
-      }
-
-      let maxGap = 0;
-
-      for (let i = 1; i < userPicks.length; i++) {
-        const prev = userPicks[i - 1].pickOrder;
-        const current = userPicks[i].pickOrder;
-        const gap = current - prev - 1; // picks in between
-        if (gap > maxGap) {
-          maxGap = gap;
-        }
-      }
-
-      // Optionally, include "gap since last pick until now"
-      const gapSinceLast = (this.status?.history.length ?? 0) - userPicks[userPicks.length - 1].pickOrder;
-      if (gapSinceLast > maxGap) {
-        maxGap = gapSinceLast;
-      }
-
-      if (maxGap < 0) {
-        return this.getPicksSinceLastPick(firebaseUserId);
+    let current = 0;
+    let longest = 0;
+    for (const [, recipients] of [...turns.entries()].sort(([a], [b]) => a - b)) {
+      if (recipients.has(firebaseUserId)) {
+        current = 0;
       } else {
-        return maxGap;
+        current++;
+        longest = Math.max(longest, current);
       }
     }
-    return 0;
+    // Includes the initial wait, gaps between picks, and the ongoing wait.
+    return { current, longest };
   }
 
   getProgress(p: UserProgress): number {

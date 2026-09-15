@@ -115,6 +115,7 @@ public class DraftEngine
 
     private async Task ReplenishQueueAsync(int seasonId, Draft draft)
     {
+        await _drafts.RemoveUnusablePicksAsync(draft.DraftId, seasonId);
         var upcoming = (await _drafts.GetUpcomingPicksAsync(draft.DraftId, 3)).ToList();
         if (upcoming.Count >= 3 || !await _selections.AnyTicketsRemainingAsync(seasonId)) return;
 
