@@ -75,3 +75,54 @@ test('draft consumes all tickets with mixed 4- and 2-ticket browser picks', asyn
   expect(final.upcoming).toHaveLength(0);
   await expect(page.locator('app-game-card')).toHaveCount(0);
 });
+
+test('participant wait statistics count completed turns, including splits and skipped orders', async ({ page, request }) => {
+  await page.goto('/participants');
+  const row = (name: string) => page.getByRole('row').filter({ hasText: name });
+  const check = async (name: string, last: number, longest: number) => {
+    await expect(row(name).locator('.mat-column-lastPick')).toHaveText(`${last} Picks ago`);
+    await expect(row(name).locator('.mat-column-longestWait')).toHaveText(`${longest} Picks`);
+  };
+  await check('E2E Alice', 0, 0);
+  await check('E2E Carol', 0, 0);
+  // Five completed turns: A, B, B, B, A+C (split). Deliberate gaps
+  // represent deleted pending turns; they are not completed picks.
+  execFileSync('docker', ['compose', '-p', 'hopper-e2e', '-f', 'compose.yml', 'exec', '-T', 'db',
+    '/opt/mssql-tools18/bin/sqlcmd', '-b', '-C', '-S', 'localhost', '-U', 'sa',
+    '-P', 'HopperE2e-Only!2026', '-d', 'HopperE2e'], { input: `
+    IF DB_NAME() <> 'HopperE2e' THROW 50000, 'Test database required', 1;
+    INSERT INTO Draft (SeasonId, IsActive) VALUES (1, 1);
+    DECLARE @draft int = SCOPE_IDENTITY();
+    DECLARE @games TABLE (n int, id int);
+    INSERT INTO @games SELECT ROW_NUMBER() OVER (ORDER BY GameId), GameId FROM Game;
+    INSERT INTO DraftPick (DraftId, FirebaseUserId, PickOrder, GameId, ClaimedUtc)
+    SELECT @draft, uid, ord, g.id, SYSUTCDATETIME()
+    FROM (VALUES (1, 'e2e-a', 2), (2, 'e2e-b', 5), (3, 'e2e-b', 9),
+                 (4, 'e2e-b', 10), (5, 'e2e-a', 15)) p(n, uid, ord)
+    INNER JOIN @games g ON g.n = p.n;
+    INSERT INTO Selection (DraftPickId, FirebaseUserId, GameId, Quantity, PickedUtc)
+    SELECT DraftPickId, FirebaseUserId, GameId, 2, SYSUTCDATETIME() FROM DraftPick WHERE DraftId = @draft;
+    INSERT INTO Selection (DraftPickId, FirebaseUserId, GameId, Quantity, PickedUtc)
+    SELECT DraftPickId, 'e2e-c', GameId, 2, SYSUTCDATETIME() FROM DraftPick WHERE DraftId = @draft AND PickOrder = 15;
+    UPDATE g SET RemainingTickets = 4 - COALESCE((SELECT SUM(Quantity) FROM Selection WHERE GameId = g.GameId), 0) FROM Game g;
+    INSERT INTO DraftPick (DraftId, FirebaseUserId, PickOrder) VALUES (@draft, 'e2e-c', 20);
+  ` });
+  await page.reload();
+  await check('E2E Alice', 0, 3);
+  await check('E2E Bob', 1, 1);
+  await check('E2E Carol', 0, 4);
+  await check('E2E Admin', 5, 5); // No picks yet: the entire draft is the wait.
+
+  // Make a real pick and verify the open Participants page updates via SignalR.
+  const status = await (await request.get(`${api}/Draft/1/status`)).json();
+  const games = await (await request.get(`${api}/games/season/1`)).json();
+  const response = await request.post(`${api}/Selections/1`, { data: [{
+    draftPickId: status.upcoming[0].draftPickId, firebaseUserId: 'e2e-c',
+    gameId: games.find((g: any) => g.remainingTickets === 4).gameId, quantity: 2
+  }] });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  await check('E2E Alice', 1, 3);
+  await check('E2E Bob', 2, 2);
+  await check('E2E Carol', 0, 4);
+  await check('E2E Admin', 6, 6);
+});
