@@ -74,8 +74,8 @@ export class FilterDialogComponent implements OnInit {
     this.filterSvc.setSearchTerm(term);
   }
 
-  toggleAvailable() {
-    this.filterSvc.toggleAvailable();
+  setAvailableOnly(value: boolean) {
+    this.filterSvc.setAvailableOnly(value);
   }
 
   updateMonths(months: number[]) {
@@ -91,6 +91,7 @@ export class FilterDialogComponent implements OnInit {
     this.selectedMonths = [];
     this.selectedDays = [];
     this.showAvailableOnly = false;
+    this.filterSvc.setAvailableOnly(false);
     this.filterSvc.setSearchTerm('');
     this.filterSvc.setFilters({ months: [], daysOfWeek: [] });
   }

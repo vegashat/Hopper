@@ -12,6 +12,7 @@ public interface IDraftRepository
     Task<IEnumerable<DraftPick>> GetDraftPicksAsync(int draftId);                    // full history
     Task<IEnumerable<DraftPick>> GetUpcomingPicksAsync(int draftId, int take = 3);   // unclaimed, in order
 
+    Task RemoveUnusablePicksAsync(int draftId, int seasonId);
     Task<int> GetLastPickOrderAsync(int draftId);
     Task AddDraftPicksAsync(IEnumerable<DraftPick> picks);
     Task AddDraftPickAsync(DraftPick pick);
@@ -22,6 +23,22 @@ public class DraftRepository : IDraftRepository
 {
     private readonly Db _db;
     public DraftRepository(Db db) => _db = db;
+
+    public async Task RemoveUnusablePicksAsync(int draftId, int seasonId)
+    {
+        using var conn = _db.Open();
+        await conn.ExecuteAsync(@"
+            DELETE dp FROM DraftPick dp
+            WHERE dp.DraftId = @draftId AND dp.ClaimedUtc IS NULL
+              AND (
+                NOT EXISTS (SELECT 1 FROM Game WHERE SeasonId = @seasonId AND RemainingTickets >= 2)
+                OR COALESCE((SELECT TicketAllotment FROM ParticipantAllotment
+                    WHERE SeasonId = @seasonId AND FirebaseUserId = dp.FirebaseUserId), 0)
+                   - COALESCE((SELECT SUM(s.Quantity) FROM Selection s
+                       INNER JOIN Game g ON g.GameId = s.GameId
+                       WHERE g.SeasonId = @seasonId AND s.FirebaseUserId = dp.FirebaseUserId), 0) < 2
+              );", new { draftId, seasonId });
+    }
 
     public async Task<Draft> StartDraftAsync(int seasonId)
     {
