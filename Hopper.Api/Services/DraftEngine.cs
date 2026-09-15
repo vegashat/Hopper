@@ -36,6 +36,22 @@ public class DraftEngine
 
     // --- Public API ---
 
+    public async Task<DraftStatus> UpdateAllotmentAsync(int seasonId, string firebaseUserId, int allotment)
+    {
+        var seasonLock = GetSeasonLock(seasonId);
+        await seasonLock.WaitAsync();
+        try
+        {
+            await _participants.UpdateAllotmentAsync(seasonId, firebaseUserId, allotment);
+            var draft = await _drafts.GetActiveDraftAsync(seasonId);
+            if (draft != null) await ReplenishQueueAsync(seasonId, draft);
+            var status = await BuildStatusAsync(seasonId);
+            await _hub.Clients.Group(Group(seasonId)).SendAsync("StatusChanged", status);
+            return status;
+        }
+        finally { seasonLock.Release(); }
+    }
+
     public async Task<Draft> StartDraftAsync(int seasonId)
     {
         var seasonLock = GetSeasonLock(seasonId);

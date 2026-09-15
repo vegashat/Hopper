@@ -65,6 +65,11 @@ export class DraftService {
       .subscribe({ error: () => this.toastService.error('Unable to load draft status') });
   }
 
+  updateAllotment(seasonId: number, userId: string, allotment: number): Observable<DraftStatus> {
+    return this.http.put<DraftStatus>(`${this.apiUrl}/${seasonId}/allotments/${encodeURIComponent(userId)}`, { allotment })
+      .pipe(tap(status => this.draftStatusSubject.next(status)));
+  }
+
   startDraft(seasonId: number): Observable<Draft> {
     return this.http.post<Draft>(`${this.apiUrl}/start/${seasonId}`, {});
   }

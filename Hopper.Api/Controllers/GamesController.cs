@@ -32,9 +32,18 @@ public class GamesController : ControllerBase
         return Ok(games);
     }
 
+    [HttpGet("teams")]
+    public async Task<ActionResult<IEnumerable<Team>>> Teams() => Ok(await _repo.GetTeamsAsync());
+
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult<Game>> Create([FromBody] Game request)
     {
+        var team = (await _repo.GetTeamsAsync()).FirstOrDefault(t => t.TeamId == request.Opponent?.TeamId);
+        if (request.SeasonId <= 0 || request.GameDateTime == default || team == null)
+            return BadRequest(new { message = "Choose a season, opponent, and game date/time." });
+        request.Opponent = team;
+        request.RemainingTickets = 4;
         var created = await _repo.CreateAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = created.GameId }, created);
     }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Game } from '@models/game.model';
+import { Game, Team } from '@models/game.model';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs/operators';
 import { environment } from 'environments/environment';
@@ -54,6 +54,19 @@ export class GamesService {
 
   getSeasonGames(seasonId: number): Observable<Game[]> {
     return this.http.get<Game[]>(`${this.apiUrl}/season/${seasonId}`);
+  }
+
+  getTeams(): Observable<Team[]> {
+    return this.http.get<Team[]>(`${this.apiUrl}/teams`);
+  }
+
+  createGame(game: Omit<Game, 'gameId' | 'selections'>): Observable<Game> {
+    return this.http.post<Game>(this.apiUrl, game).pipe(tap(created => {
+      if (created.seasonId === this.seasonService.currentSeasonId) {
+        this.gamesSubject.next([...this.gamesSubject.value, created]
+          .sort((a, b) => Date.parse(a.gameDateTime) - Date.parse(b.gameDateTime)));
+      }
+    }));
   }
 
   updateGame(updated: Game) {
