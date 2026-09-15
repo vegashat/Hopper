@@ -10,6 +10,16 @@ public class DraftController : ControllerBase
     private readonly DraftEngine _engine;
     public DraftController(DraftEngine engine) => _engine = engine;
 
+    public record AllotmentRequest(int Allotment);
+
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    [HttpPut("{seasonId}/allotments/{firebaseUserId}")]
+    public async Task<ActionResult<DraftStatus>> UpdateAllotment(int seasonId, string firebaseUserId, AllotmentRequest request)
+    {
+        try { return Ok(await _engine.UpdateAllotmentAsync(seasonId, firebaseUserId, request.Allotment)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+    }
+
     [HttpPost("start/{seasonId}")]
     public async Task<ActionResult<Draft>> Start(int seasonId)
     {

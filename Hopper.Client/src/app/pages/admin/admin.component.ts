@@ -1,3 +1,8 @@
+import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { AllotmentEditorComponent } from '../../components/allotment-editor/allotment-editor.component';
 import { StevenCounterComponent } from '../../components/steven-counter/steven-counter.component';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'environments/environment';
@@ -14,14 +19,15 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { DraftService } from '@services/draft.service';
 import { DraftStatus } from '@models/draft.model';
+import { Game, Team } from '@models/game.model';
 import { GamesService } from '@services/games.service';
 import { SeasonService } from '@services/season.service';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [StevenCounterComponent,
-    CommonModule,
+  imports: [AllotmentEditorComponent, StevenCounterComponent,
+    CommonModule, FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule,
     MatTabsModule,
     MatButtonModule,
     MatTableModule,
@@ -44,6 +50,51 @@ export class AdminComponent implements OnInit {
   private toast = inject(ToastService);
   resettingUser: string | null = null;
 
+  addingGame = false;
+  savingGame = false;
+  teams: Team[] = [];
+  opponent: Team | null = null;
+  gameDateTime = '';
+  arena = '';
+  gameError = '';
+
+  openAddGame(): void {
+    this.addingGame = true;
+    this.gameError = '';
+    this.gameService.getTeams().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: teams => this.teams = teams,
+      error: () => this.gameError = 'Unable to load opponents. Close the form and try again.'
+    });
+  }
+
+  addGame(): void {
+    if (this.savingGame || !this.opponent || !this.gameDateTime) return;
+    const date = new Date(this.gameDateTime);
+    if (!Number.isFinite(date.getTime())) {
+      this.gameError = 'Enter a valid game date and time.';
+      return;
+    }
+    this.savingGame = true;
+    this.gameError = '';
+    this.gameService.createGame({
+      seasonId: this.seasonId, opponent: this.opponent,
+      gameDateTime: date.toISOString(), arena: this.arena.trim(), remainingTickets: 4
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.savingGame = false;
+        this.addingGame = false;
+        this.opponent = null;
+        this.gameDateTime = '';
+        this.arena = '';
+        this.toast.success('Game added.');
+      },
+      error: err => {
+        this.savingGame = false;
+        this.gameError = err.error?.message || 'Unable to add game. Please try again.';
+      }
+    });
+  }
+
   resetPin(participant: Participant): void {
     if (!window.confirm('Reset PIN for ' + participant.displayName + '? Their sessions will end and they must choose a new PIN at their next login.')) return;
     this.resettingUser = participant.firebaseUserId;
@@ -65,6 +116,9 @@ export class AdminComponent implements OnInit {
 
   ngOnInit() : void {
     this.loadStatus();
+    this.gameService.games$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(games => {
+      this.games = games;
+    });
     this.http.get<Participant[]>(`${environment.apiUrl}/participants`)
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: participants => this.participants = participants,
@@ -72,10 +126,7 @@ export class AdminComponent implements OnInit {
       });
   }
 
-  games = [
-    { gameId: 1, opponent: 'Charlotte Hornets', gameDateTime: new Date(), arena: 'Paycom', remainingTickets: 2 },
-    { gameId: 2, opponent: 'Denver Nuggets', gameDateTime: new Date(), arena: 'Paycom', remainingTickets: 4 },
-  ];
+  games: Game[] = [];
 
   participants: Participant[] = [];
 

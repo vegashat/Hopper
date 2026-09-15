@@ -5,6 +5,7 @@ namespace Hopper.Api.Repositories;
 
 public interface IGameRepository
 {
+    Task<IEnumerable<Team>> GetTeamsAsync();
     Task<IEnumerable<Game>> GetAllAsync();
     Task<Game?> GetByIdAsync(int gameId);
     Task<IEnumerable<Game>> GetBySeasonAsync(int seasonId, int? gameId = null);
@@ -16,6 +17,12 @@ public class GameRepository : IGameRepository
 {
     private readonly Db _db;
     public GameRepository(Db db) => _db = db;
+
+    public async Task<IEnumerable<Team>> GetTeamsAsync()
+    {
+        using var conn = _db.Open();
+        return await conn.QueryAsync<Team>("SELECT TeamId, Name, City, LogoUrl FROM Team ORDER BY Name");
+    }
 
     public async Task<IEnumerable<Game>> GetAllAsync()
     {
