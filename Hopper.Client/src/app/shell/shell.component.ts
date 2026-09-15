@@ -1,3 +1,4 @@
+import { version } from '../../../package.json';
 import { Component, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -59,6 +60,7 @@ import { environment } from 'environments/environment';
   ]
 })
 export class ShellComponent implements OnInit, OnDestroy {
+  readonly appVersion = version;
   private filterSvc = inject(FilterService);
   private dialog = inject(MatDialog);
   private auth = inject(AuthService);
