@@ -10,6 +10,7 @@ export class SignalRService {
   private apiUrl = `${environment.apiUrl}`.replace('/api','');
   private hubConnection?: signalR.HubConnection;
   private seasonId?: number;
+  private startLoop?: Promise<void>;
   private readonly handlers = new Map<string, Array<(data: unknown) => void>>();
 
   connect(seasonId: number): void {
@@ -25,12 +26,16 @@ export class SignalRService {
       handlers.forEach(handler => this.hubConnection?.on(event, handler));
     }
 
-    this.hubConnection.onreconnected(() => this.joinSeason());
+    this.hubConnection.onreconnected(() => this.joinSeason().catch(error => {
+      console.error('Unable to rejoin draft updates.', error);
+      void this.startWithRetry();
+    }));
+    this.hubConnection.onclose(error => {
+      if (error) console.error('Draft updates connection closed.', error);
+      void this.startWithRetry();
+    });
 
-    this.hubConnection
-      .start()
-      .then(() => this.joinSeason())
-      .catch(error => console.error('Unable to connect to draft updates.', error));
+    void this.startWithRetry();
   }
 
   on<T>(event: string, handler: (data: T) => void): void {
@@ -44,5 +49,30 @@ export class SignalRService {
   private joinSeason(): Promise<void> {
     if (!this.hubConnection || this.seasonId === undefined) return Promise.resolve();
     return this.hubConnection.invoke('JoinSeason', this.seasonId.toString());
+  }
+
+  private startWithRetry(): Promise<void> {
+    if (this.startLoop) return this.startLoop;
+    this.startLoop = (async () => {
+      let retry = 0;
+      while (this.hubConnection) {
+        try {
+          if (this.hubConnection.state === signalR.HubConnectionState.Disconnected) {
+            await this.hubConnection.start();
+          }
+          if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
+            await this.joinSeason();
+            return;
+          }
+        } catch (error) {
+          console.error('Unable to connect to draft updates; retrying.', error);
+        }
+
+        const delayMs = Math.min(1000 * 2 ** retry, 15000);
+        retry++;
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    })().finally(() => this.startLoop = undefined);
+    return this.startLoop;
   }
 }
