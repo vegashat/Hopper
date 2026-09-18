@@ -30,6 +30,29 @@ async function saveRankings(page: any) {
   expect((await saved).status()).toBe(204);
 }
 
+test('admin can skip the current draft pick without spending tickets', async ({ page, request }) => {
+  await loginAs(page, /E2E Admin/);
+  await page.goto('/admin');
+  await page.getByRole('tab', { name: 'Draft', exact: true }).click();
+
+  const started = page.waitForResponse(r => r.url().endsWith('/Draft/start/1') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: /Start Draft/ }).click();
+  expect((await started).ok()).toBeTruthy();
+
+  const before = await (await request.get(`${api}/Draft/1/status`)).json();
+  const turn = before.upcoming[0];
+  expect(turn).toBeTruthy();
+  const skipped = page.waitForResponse(r => r.url().endsWith('/Draft/skip/1') && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Skip current pick' }).click();
+  expect((await skipped).status()).toBe(200);
+
+  await expect.poll(async () => (await (await request.get(`${api}/Draft/1/status`)).json()).history
+    .some((pick: any) => pick.pickOrder === turn.pickOrder && pick.isSkipped)).toBeTruthy();
+  const after = await (await request.get(`${api}/Draft/1/status`)).json();
+  expect(after.totalTicketsRemaining).toBe(before.totalTicketsRemaining);
+  expect(after.upcoming[0].draftPickId).not.toBe(turn.draftPickId);
+});
+
 test('rankings suggest selections, allow rejection, and split ticket purchases between users', async ({ page, browser, request }) => {
   const bobPage = await browser.newPage();
   const adminPage = await browser.newPage();

@@ -16,6 +16,7 @@ public interface IDraftRepository
     Task<int> GetLastPickOrderAsync(int draftId);
     Task AddDraftPicksAsync(IEnumerable<DraftPick> picks);
     Task AddDraftPickAsync(DraftPick pick);
+    Task<bool> SkipNextPickAsync(int seasonId);
 
 }
 
@@ -99,7 +100,7 @@ public class DraftRepository : IDraftRepository
                 g.GameDateTime,
                 dp.PickOrder,
                 dp.ClaimedUtc,
-                p.FirebaseUserId,
+                COALESCE(s.FirebaseUserId, dp.FirebaseUserId) AS FirebaseUserId,
                 p.DisplayName,
                 pp.FirebaseUserId AS PickedById,
                 pp.DisplayName AS PickedByDisplayName,
@@ -109,10 +110,10 @@ public class DraftRepository : IDraftRepository
                 t.City,
                 t.LogoUrl
             FROM DraftPick dp
-                INNER JOIN Selection s
+                LEFT JOIN Selection s
                 ON dp.GameId = s.GameId and dp.DraftPickId = s.draftPickId
                 left JOIN Participant p
-                ON s.FirebaseUserId = p.FirebaseUserId
+                ON COALESCE(s.FirebaseUserId, dp.FirebaseUserId) = p.FirebaseUserId
                 left JOIN Participant pp
                 ON dp.FirebaseUserId = pp.FirebaseUserId
                 LEFT JOIN Game g
@@ -186,6 +187,26 @@ public class DraftRepository : IDraftRepository
         await conn.ExecuteAsync(
             "INSERT INTO DraftPick (DraftId, FirebaseUserId, PickOrder) VALUES (@DraftId, @FirebaseUserId, @PickOrder)",
             pick);
+    }
+
+    public async Task<bool> SkipNextPickAsync(int seasonId)
+    {
+        using var conn = _db.Open();
+        using var tx = conn.BeginTransaction();
+        var deleted = await conn.ExecuteAsync(@"
+            UPDATE dp
+            SET ClaimedUtc = SYSUTCDATETIME()
+            FROM DraftPick dp
+            INNER JOIN Draft d ON d.DraftId = dp.DraftId
+            WHERE dp.DraftPickId = (
+                SELECT TOP (1) currentPick.DraftPickId
+                FROM DraftPick currentPick WITH (UPDLOCK, HOLDLOCK)
+                WHERE currentPick.DraftId = d.DraftId AND currentPick.ClaimedUtc IS NULL
+                ORDER BY currentPick.PickOrder
+            )
+              AND d.SeasonId = @seasonId AND d.IsActive = 1 AND dp.ClaimedUtc IS NULL;", new { seasonId }, tx);
+        tx.Commit();
+        return deleted == 1;
     }
 
 }

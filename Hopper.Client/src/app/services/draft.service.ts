@@ -77,4 +77,8 @@ export class DraftService {
   resetDraft(seasonId: number): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/reset/${seasonId}`, {});
   }
+
+  skipNextPick(seasonId: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/skip/${seasonId}`, {});
+  }
 }

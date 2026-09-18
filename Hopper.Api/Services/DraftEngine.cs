@@ -113,6 +113,22 @@ public class DraftEngine
         }
     }
 
+    public async Task<bool> SkipNextPickAsync(int seasonId)
+    {
+        var seasonLock = GetSeasonLock(seasonId);
+        await seasonLock.WaitAsync();
+        try
+        {
+            var skipped = await _drafts.SkipNextPickAsync(seasonId);
+            if (!skipped) return false;
+            var draft = await _drafts.GetActiveDraftAsync(seasonId);
+            if (draft is not null) await ReplenishQueueAsync(seasonId, draft);
+            await BroadcastStatus(seasonId, "PickSkipped");
+            return true;
+        }
+        finally { seasonLock.Release(); }
+    }
+
     private async Task ReplenishQueueAsync(int seasonId, Draft draft)
     {
         await _drafts.RemoveUnusablePicksAsync(draft.DraftId, seasonId);
@@ -153,7 +169,8 @@ public class DraftEngine
                     PickOrder = h.PickOrder,
                     FirebaseUserId = h.FirebaseUserId,
                     DisplayName = participants.TryGetValue(h.FirebaseUserId, out var p) ? p.DisplayName : null,
-                    ClaimedUtc = h.ClaimedUtc
+                    ClaimedUtc = h.ClaimedUtc,
+                    IsSkipped = h.GameId == 0
                 });
         }
 

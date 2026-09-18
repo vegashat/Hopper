@@ -42,6 +42,10 @@ export class AuthService {
 
   logout() {
     this.http.post<void>(`${this.apiUrl}/logout`, {}).subscribe();
+    this.clearLocalSession();
+  }
+
+  clearLocalSession() {
     localStorage.removeItem('user');
     localStorage.removeItem('sessionToken');
     localStorage.removeItem('sessionVersion');

@@ -40,6 +40,7 @@ export interface HistoryPick {
   firebaseUserId: string;
   displayName: string | null;
   claimedUtc: string | null;
+  isSkipped: boolean;
 }
 
 export interface UpcomingPick {
