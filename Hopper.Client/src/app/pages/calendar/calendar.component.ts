@@ -50,7 +50,10 @@ export class CalendarComponent implements OnInit {
       const content = document.createElement('div');
       content.className = 'logo-cell';
       content.title = title;
-      if (remaining <= 0) content.classList.add('disabled');
+      if (remaining <= 0) {
+        content.classList.add('sold-out');
+        content.setAttribute('aria-label', `${title}, sold out`);
+      }
 
       if (logo) {
         const image = document.createElement('img');
