@@ -101,6 +101,7 @@ export class GameRankingsComponent implements OnInit {
           !this.availableGames.some(item => item.gameId === game.gameId)) return;
       this.availableGames = this.availableGames.filter(item => item.gameId !== game.gameId);
       this.rankedGames.push({ game, quantity });
+      this.save();
     });
   }
 

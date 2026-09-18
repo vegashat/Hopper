@@ -165,14 +165,52 @@
   text-align: center;
 }
 
-/* Disabled state */
-.disabled {
-  opacity: 0.5 !important;
-  filter: grayscale(100%) brightness(0.7) !important;
-  pointer-events: none;
+/* FullCalendar creates event content dynamically, so reach it through the host. */
+::ng-deep .fc .logo-cell.sold-out .opponent-logo {
+  opacity: 0.45;
+  filter: grayscale(100%);
 }
 
-.disabled .opponent-logo {
-  opacity: 0.5 !important;
-  filter: grayscale(100%) brightness(0.6) !important;
+/* An iPhone 15 Pro Max is about 430 CSS pixels wide: each month cell is
+   roughly 55 pixels, so keep the event content within that width. */
+@media (max-width: 480px) {
+  .calendar-wrap {
+    padding: 2px;
+  }
+
+  .fc {
+    padding: 2px;
+  }
+
+  ::ng-deep .fc-daygrid-event {
+    max-width: 100%;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  ::ng-deep .fc-daygrid-event img,
+  ::ng-deep .fc .opponent-logo {
+    width: 22px !important;
+    height: 22px !important;
+    margin: 0 auto 1px;
+  }
+
+  ::ng-deep .fc .game-time {
+    font-size: 0.55rem;
+    line-height: 1.1;
+  }
+
+  ::ng-deep .fc .remaining {
+    font-size: 0.5rem;
+    line-height: 1.1;
+  }
+
+  ::ng-deep .fc .participants {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.48rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }

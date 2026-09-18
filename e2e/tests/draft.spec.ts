@@ -10,6 +10,143 @@ test.beforeEach(() => {
     '-P', 'HopperE2e-Only!2026', '-d', 'HopperE2e'], { input: readFileSync('seed.sql') });
 });
 
+async function loginAs(page: any, name: RegExp) {
+  await page.goto('/games');
+  const logout = page.getByRole('button', { name: 'Logout', exact: true });
+  if (await logout.isVisible()) await logout.click();
+  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('combobox').click();
+  await page.getByRole('option', { name }).click();
+  await dialog.getByLabel('PIN', { exact: true }).fill('1234');
+  await dialog.getByRole('button', { name: 'Login', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Login' })).toBeHidden();
+}
+
+async function saveRankings(page: any) {
+  const saved = page.waitForResponse((response: any) =>
+    response.url().includes('/game-rankings') && response.request().method() === 'PUT');
+  await page.getByRole('button', { name: 'Save rankings' }).click();
+  expect((await saved).status()).toBe(204);
+}
+
+test('rankings suggest selections, allow rejection, and split ticket purchases between users', async ({ page, browser, request }) => {
+  const bobPage = await browser.newPage();
+  const adminPage = await browser.newPage();
+  const games = await (await request.get(`${api}/games/season/1`)).json();
+  const rankAlice: { gameId: number; quantity: number }[] = [];
+  let rankBob: { gameId: number; quantity: number };
+
+  await loginAs(page, /E2E Alice/);
+  await page.goto('/rankings');
+  for (const index of [0, 1]) {
+    const row = page.locator('.available-row').nth(index);
+    const gameName = await row.locator('strong').innerText();
+    const rankedGame = games.find((game: any) => game.opponent.name === gameName);
+    expect(rankedGame).toBeTruthy();
+    rankAlice.push({ gameId: rankedGame.gameId, quantity: 2 });
+    const add = row.getByRole('button', { name: /Add/ });
+    await add.click();
+    await page.getByRole('dialog').getByRole('button', { name: '2 tickets', exact: true }).click();
+    await expect(page.locator('.ranking-row').nth(index).locator('strong')).toHaveText(gameName);
+    await saveRankings(page);
+  }
+  const aliceRankingResponse = await request.get(`${api}/seasons/1/game-rankings?firebaseUserId=e2e-a`);
+  expect((await aliceRankingResponse.json()).map((item: any) => ({
+    gameId: item.gameId, quantity: item.quantity, rankOrder: item.rankOrder
+  }))).toEqual(rankAlice.map((item, rankOrder) => ({ ...item, rankOrder: rankOrder + 1 })));
+
+  await loginAs(bobPage, /E2E Bob/);
+  await bobPage.goto('/rankings');
+  const row = bobPage.locator('.available-row').nth(2);
+  const bobGameName = await row.locator('strong').innerText();
+  const bobGame = games.find((game: any) => game.opponent.name === bobGameName);
+  expect(bobGame).toBeTruthy();
+  rankBob = { gameId: bobGame.gameId, quantity: 2 };
+  await row.getByRole('button', { name: /Add/ }).click();
+  await bobPage.getByRole('dialog').getByRole('button', { name: '2 tickets', exact: true }).click();
+  await saveRankings(bobPage);
+  await expect(bobPage.locator('.ranking-row').locator('strong')).toHaveText([bobGameName]);
+  const bobRankingResponse = await request.get(`${api}/seasons/1/game-rankings?firebaseUserId=e2e-b`);
+  expect((await bobRankingResponse.json()).map((item: any) => ({
+    gameId: item.gameId, quantity: item.quantity, rankOrder: item.rankOrder
+  }))).toEqual([{ ...rankBob, rankOrder: 1 }]);
+
+  await loginAs(adminPage, /E2E Admin/);
+  await adminPage.goto('/admin');
+  await adminPage.getByRole('tab', { name: 'Draft', exact: true }).click();
+  const started = adminPage.waitForResponse(r => r.url().endsWith('/Draft/start/1') && r.request().method() === 'POST');
+  await adminPage.getByRole('button', { name: /Start Draft/ }).click();
+  expect((await started).ok()).toBeTruthy();
+
+  const makeRankedChoice = async (userId: string, accept: boolean) => {
+    const state = await (await request.get(`${api}/Draft/1/status`)).json();
+    const turn = state.upcoming[0];
+    expect(turn.firebaseUserId).toBe(userId);
+    const pickerPage = userId === 'e2e-a' ? page : bobPage;
+    await pickerPage.goto('/games');
+    const suggestion = pickerPage.getByRole('dialog', { name: 'Ranked game available' });
+    await expect(suggestion.getByRole('heading', { name: 'Ranked game available' })).toBeVisible();
+    const userRankings = await (await request.get(`${api}/seasons/1/game-rankings?firebaseUserId=${userId}`)).json();
+    const selectedRanking = userRankings
+      .filter((ranking: any) => !ranking.isFulfilled)
+      .sort((a: any, b: any) => a.rankOrder - b.rankOrder)[0];
+    const selectedGame = games.find((game: any) => game.gameId === selectedRanking.gameId);
+    expect(selectedGame).toBeTruthy();
+    if (accept) {
+      const saved = pickerPage.waitForResponse(r => r.url().endsWith('/Selections/1') && r.request().method() === 'POST');
+      await suggestion.getByRole('button', { name: /Select 2 tickets/ }).click();
+      expect((await saved).ok()).toBeTruthy();
+      await expect.poll(async () => {
+        const current = await (await request.get(`${api}/games/season/1`)).json();
+        return current.find((g: any) => g.gameId === selectedGame.gameId).remainingTickets;
+      }).toBe(2);
+    } else {
+      await suggestion.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await expect(suggestion).toBeHidden();
+      const saved = pickerPage.waitForResponse(r => r.url().endsWith('/Selections/1') && r.request().method() === 'POST');
+      await pickerPage.locator(`[data-game-id="${selectedGame.gameId}"]`).getByRole('button', { name: 'Pick 2', exact: true }).click();
+      expect((await saved).ok()).toBeTruthy();
+    }
+  };
+
+  let status = await (await request.get(`${api}/Draft/1/status`)).json();
+  const rankedUsersSeen = new Set<string>();
+  for (let turn = 0; turn < 8 && rankedUsersSeen.size < 2; turn++) {
+    status = await (await request.get(`${api}/Draft/1/status`)).json();
+    const pickerId = status.upcoming[0].firebaseUserId;
+    if (pickerId !== 'e2e-a' && pickerId !== 'e2e-b') continue;
+    await makeRankedChoice(pickerId, pickerId === 'e2e-a');
+    rankedUsersSeen.add(pickerId);
+  }
+  expect([...rankedUsersSeen].sort()).toEqual(['e2e-a', 'e2e-b']);
+
+  // Make a separate two-person purchase through the split-pick dialog.
+  const afterSuggestion = await (await request.get(`${api}/Draft/1/status`)).json();
+  const next = afterSuggestion.upcoming[0];
+  await adminPage.goto('/games');
+  const available = (await (await request.get(`${api}/games/season/1`)).json()).find((g: any) => g.remainingTickets === 4);
+  expect(available).toBeTruthy();
+  const splitCard = adminPage.locator(`[data-game-id="${available.gameId}"]`);
+  await splitCard.getByRole('button', { name: /Pick 4/ }).click();
+  await adminPage.getByRole('menuitem', { name: 'Split 4', exact: true }).click();
+  const splitDialog = adminPage.getByRole('dialog');
+  await splitDialog.getByRole('combobox').click();
+  const splitUser = afterSuggestion.users.find((user: any) =>
+    user.firebaseUserId !== next.firebaseUserId && user.remaining >= 2);
+  expect(splitUser).toBeTruthy();
+  await adminPage.getByRole('option', { name: new RegExp(splitUser.displayName) }).click();
+  const purchased = adminPage.waitForResponse(r => r.url().endsWith('/Selections/1') && r.request().method() === 'POST');
+  await splitDialog.getByRole('button', { name: 'Confirm', exact: true }).click();
+  expect((await purchased).ok()).toBeTruthy();
+  const finalGames = await (await request.get(`${api}/games/season/1`)).json();
+  const splitGame = finalGames.find((g: any) => g.gameId === available.gameId);
+  expect(splitGame.remainingTickets).toBe(0);
+  expect(splitGame.selections).toHaveLength(2);
+  expect(splitGame.selections.map((selection: any) => selection.quantity)).toEqual([2, 2]);
+  expect(new Set(splitGame.selections.map((selection: any) => selection.firebaseUserId)).size).toBe(2);
+});
+
 test('draft consumes all tickets with mixed 4- and 2-ticket browser picks', async ({ page, request }, testInfo) => {
   await page.goto('/games');
   await page.getByRole('button', { name: 'Login', exact: true }).click();

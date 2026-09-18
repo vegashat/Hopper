@@ -16,6 +16,13 @@ export class GameRankingsService {
     );
   }
 
+  getForUser(seasonId: number, firebaseUserId: string): Observable<GameRanking[]> {
+    return this.http.get<GameRanking[]>(
+      `${environment.apiUrl}/seasons/${seasonId}/game-rankings`,
+      { params: { firebaseUserId } }
+    );
+  }
+
   replace(seasonId: number, rankings: SaveGameRanking[]): Observable<void> {
     return this.http.put<void>(
       `${environment.apiUrl}/seasons/${seasonId}/game-rankings`,

@@ -22,6 +22,8 @@ import { DraftStatus } from '@models/draft.model';
 import { Game, Team } from '@models/game.model';
 import { GamesService } from '@services/games.service';
 import { SeasonService } from '@services/season.service';
+import { GameRankingsService } from '@services/game-rankings.service';
+import { GameRanking } from '@models/game-ranking.model';
 
 @Component({
   selector: 'app-admin',
@@ -44,6 +46,7 @@ export class AdminComponent implements OnInit {
   status: DraftStatus | undefined;
   draftService = inject(DraftService)
   gameService = inject(GamesService)
+  private rankingsService = inject(GameRankingsService);
   private destroyRef = inject(DestroyRef);
 
   private http = inject(HttpClient);
@@ -129,9 +132,34 @@ export class AdminComponent implements OnInit {
   games: Game[] = [];
 
   participants: Participant[] = [];
+  selectedRankingUserId = '';
+  selectedUserRankings: GameRanking[] = [];
+  loadingUserRankings = false;
 
   displayedGameColumns = ['opponent', 'date', 'arena', 'tickets', 'actions'];
   displayedParticipantColumns = ['name', 'isAdmin', 'pinReset'];
+
+  loadUserRankings(firebaseUserId: string): void {
+    this.selectedRankingUserId = firebaseUserId;
+    this.selectedUserRankings = [];
+    if (!firebaseUserId) return;
+    this.loadingUserRankings = true;
+    this.rankingsService.getForUser(this.seasonId, firebaseUserId)
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: rankings => {
+          this.selectedUserRankings = rankings.sort((a, b) => a.rankOrder - b.rankOrder);
+          this.loadingUserRankings = false;
+        },
+        error: () => {
+          this.loadingUserRankings = false;
+          this.toast.error('Unable to load this participant’s rankings.');
+        }
+      });
+  }
+
+  gameForRanking(ranking: GameRanking): Game | undefined {
+    return this.games.find(game => game.gameId === ranking.gameId);
+  }
 
   loadStatus(): void {
     this.draftService.draftStatus$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(status => {
