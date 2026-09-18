@@ -236,7 +236,7 @@ test('draft consumes all tickets with mixed 4- and 2-ticket browser picks', asyn
   await expect(page.locator('app-game-card')).toHaveCount(0);
 });
 
-test('participant wait statistics count completed turns, including splits and skipped orders', async ({ page, request }) => {
+test('participant wait statistics count completed turns, including splits and skipped orders', async ({ page, browser, request }) => {
   await page.goto('/participants');
   const row = (name: string) => page.getByRole('row').filter({ hasText: name });
   const check = async (name: string, last: number, longest: number) => {
@@ -274,13 +274,21 @@ test('participant wait statistics count completed turns, including splits and sk
   await check('E2E Admin', 5, 5); // No picks yet: the entire draft is the wait.
 
   // Make a real pick and verify the open Participants page updates via SignalR.
+  const gamesPage = await browser.newPage();
+  await gamesPage.goto('/games');
+  const availableGame = (await (await request.get(`${api}/games/season/1`)).json())
+    .find((game: any) => game.remainingTickets === 4);
+  expect(availableGame).toBeTruthy();
+  const liveGameCard = gamesPage.locator(`[data-game-id="${availableGame.gameId}"]`);
+  await expect(liveGameCard).toContainText('Remaining tickets: 4');
+
   const status = await (await request.get(`${api}/Draft/1/status`)).json();
-  const games = await (await request.get(`${api}/games/season/1`)).json();
   const response = await request.post(`${api}/Selections/1`, { data: [{
     draftPickId: status.upcoming[0].draftPickId, firebaseUserId: 'e2e-c',
-    gameId: games.find((g: any) => g.remainingTickets === 4).gameId, quantity: 2
+    gameId: availableGame.gameId, quantity: 2
   }] });
   expect(response.ok(), await response.text()).toBeTruthy();
+  await expect(liveGameCard).toContainText('Remaining tickets: 2');
   await check('E2E Alice', 1, 3);
   await check('E2E Bob', 2, 2);
   await check('E2E Carol', 0, 4);
