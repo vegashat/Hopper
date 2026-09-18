@@ -1,5 +1,5 @@
 // src/app/services/signalr.service.ts
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { environment } from 'environments/environment';
 
@@ -7,6 +7,7 @@ import { environment } from 'environments/environment';
   providedIn: 'root'
 })
 export class SignalRService {
+  private readonly zone = inject(NgZone);
   private apiUrl = `${environment.apiUrl}`.replace('/api','');
   private hubConnection?: signalR.HubConnection;
   private seasonId?: number;
@@ -39,7 +40,7 @@ export class SignalRService {
   }
 
   on<T>(event: string, handler: (data: T) => void): void {
-    const wrapped = handler as (data: unknown) => void;
+    const wrapped = (data: unknown) => this.zone.run(() => handler(data as T));
     const handlers = this.handlers.get(event) ?? [];
     handlers.push(wrapped);
     this.handlers.set(event, handlers);
