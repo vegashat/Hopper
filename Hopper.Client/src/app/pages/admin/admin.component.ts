@@ -4,7 +4,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { AllotmentEditorComponent } from '../../components/allotment-editor/allotment-editor.component';
 import { StevenCounterComponent } from '../../components/steven-counter/steven-counter.component';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from 'environments/environment';
 import { Participant } from '@models/participant.model';
 import { ToastService } from '@services/toast.service';
@@ -199,9 +199,14 @@ export class AdminComponent implements OnInit {
         this.draftService.loadStatus(this.seasonId);
         this.toast.success('Current pick skipped. No tickets were used.');
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
         this.skippingPick = false;
-        this.toast.error('Unable to skip the current pick.');
+        if (error.status === 401) {
+          this.toast.error('Your session has expired. Please log in again.');
+          return;
+        }
+        const message = error.error?.message ?? error.error ?? 'Unable to skip the current pick.';
+        this.toast.error(typeof message === 'string' ? message : 'Unable to skip the current pick.');
       }
     });
   }
