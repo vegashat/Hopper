@@ -52,6 +52,7 @@ export class AdminComponent implements OnInit {
   private http = inject(HttpClient);
   private toast = inject(ToastService);
   resettingUser: string | null = null;
+  skippingPick = false;
 
   addingGame = false;
   savingGame = false;
@@ -186,6 +187,22 @@ export class AdminComponent implements OnInit {
         console.log('Draft reset')
       },
       error: (err) => console.error('Failed to reset draft', err),
+    });
+  }
+
+  skipNextPick(): void {
+    if (this.skippingPick || !this.status?.upcoming.length) return;
+    this.skippingPick = true;
+    this.draftService.skipNextPick(this.seasonId).subscribe({
+      next: () => {
+        this.skippingPick = false;
+        this.draftService.loadStatus(this.seasonId);
+        this.toast.success('Current pick skipped. No tickets were used.');
+      },
+      error: () => {
+        this.skippingPick = false;
+        this.toast.error('Unable to skip the current pick.');
+      }
     });
   }
 

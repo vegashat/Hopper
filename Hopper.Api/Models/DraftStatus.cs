@@ -24,6 +24,7 @@ public class HistoryPick
     public string FirebaseUserId { get; set; } = "";
     public string? DisplayName { get; set; }
     public DateTime? ClaimedUtc { get; set; }
+    public bool IsSkipped { get; set; }
 }
 
 public class UserProgress

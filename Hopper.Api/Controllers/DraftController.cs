@@ -34,6 +34,15 @@ public class DraftController : ControllerBase
         return Ok(new { message = "Reset complete." });
     }
 
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+    [HttpPost("skip/{seasonId}")]
+    public async Task<IActionResult> Skip(int seasonId)
+    {
+        return await _engine.SkipNextPickAsync(seasonId)
+            ? Ok(new { message = "Current pick skipped." })
+            : BadRequest(new { message = "No upcoming pick is available to skip." });
+    }
+
     // Upcoming queue (always the first up to 3 unclaimed)
     [HttpGet("{seasonId}/next")]
     public async Task<ActionResult<IEnumerable<DraftPick>>> Next(int seasonId)

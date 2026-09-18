@@ -16,6 +16,7 @@ import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-split-pick-dialog',
   templateUrl: './split-pick-dialog.component.html',
+  styleUrls: ['./split-pick-dialog.component.scss'],
   imports: [MatInputModule, MatSelectModule, CommonModule, FormsModule, MatDialogContent, MatDialogActions, MatButtonModule],
 })
 export class SplitPickDialogComponent implements OnInit {
